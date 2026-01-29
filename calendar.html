@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Khmer Lunar Calendar 2026</title>
+    
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Noto Sans Khmer Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --calendar-green: #00b300;
+            --calendar-green-dark: #009900;
+            --holiday-red: #ff0000;
+            --event-blue: #0066cc;
+            --light-bg: #f8f9fa;
+            --border-color: #dee2e6;
+            --text-dark: #2c3e50;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans Khmer', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: white;
+            color: var(--text-dark);
+            font-size: 14px;
+        }
+
+        /* Header */
+        .calendar-header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.8rem 1.5rem;
+            background: white;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .header-nav {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .nav-arrow {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #333;
+            padding: 0.4rem;
+        }
+
+        .nav-arrow:hover {
+            color: var(--calendar-green);
+        }
+
+        .header-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .header-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .lunar-info {
+            font-size: 0.85rem;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .lang-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.8rem;
+            background: white;
+            border: 2px solid var(--calendar-green);
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .lang-flag {
+            width: 24px;
+            height: 24px;
+        }
+
+        /* Main Layout */
+        .calendar-container {
+            display: flex;
+            height: calc(100vh - 80px);
+        }
+
+        /* Calendar Section */
+        .calendar-main {
+            width: 60%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .calendar-weekdays-row {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            background: var(--calendar-green);
+            color: white;
+            font-weight: 700;
+        }
+
+        .weekday-cell {
+            padding: 0.5rem;
+            text-align: center;
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 0.85rem;
+        }
+
+        .weekday-cell:last-child {
+            border-right: none;
+        }
+
+        .calendar-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .calendar-row {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .calendar-row:last-child {
+            border-bottom: none;
+        }
+
+        /* Week Sidebar */
+        .week-sidebar {
+            background: var(--calendar-green);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-right: 1px solid var(--border-color);
+            padding: 0.5rem;
+            font-weight: 700;
+        }
+
+        .week-number {
+            font-size: 1.5rem;
+        }
+
+        .week-lunar {
+            font-size: 0.85rem;
+        }
+
+        /* Day Cell */
+        .day-cell {
+            border-right: 1px solid var(--border-color);
+            padding: 0.3rem;
+            background: white;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            transition: background 0.2s;
+            overflow: hidden;
+        }
+
+        .day-cell:hover {
+            background: #f0f8ff;
+        }
+
+        .day-cell:last-child {
+            border-right: none;
+        }
+
+        .day-cell.other-month {
+            background: #fafafa;
+            opacity: 0.5;
+        }
+
+        .day-cell.today {
+            background: #90EE90 !important;
+        }
+
+        .day-cell.weekend {
+            background: #f9f9f9;
+        }
+
+        .day-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.25rem;
+        }
+
+        .day-number {
+            font-size: 1.4rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .day-cell.holiday .day-number {
+            color: var(--holiday-red);
+        }
+
+        .buddhist-icon {
+            width: 16px;
+            height: 16px;
+        }
+
+        .lunar-date {
+            font-size: 0.7rem;
+            color: #555;
+            margin-bottom: 0.2rem;
+            font-weight: 500;
+        }
+
+        .day-info {
+            font-size: 0.65rem;
+            line-height: 1.1;
+            margin-top: 0.2rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .holiday-text {
+            color: var(--holiday-red);
+            font-weight: 600;
+        }
+
+        .event-text {
+            color: var(--event-blue);
+            font-weight: 600;
+        }
+
+        .buddhist-event-text {
+            color: #9933cc;
+            font-weight: 600;
+        }
+
+        .special-day {
+            color: #666;
+            font-weight: 500;
+        }
+
+        /* Date Info Modal */
+        .date-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .date-modal.show {
+            display: flex;
+        }
+
+        .date-modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            max-width: 500px;
+            width: 90%;
+            position: relative;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .date-modal-content.has-buddha-bg {
+            background-image: url('buddha-icon.png');
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 200px 200px;
+            background-blend-mode: overlay;
+        }
+
+        .date-modal-content.has-buddha-bg::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 12px;
+            z-index: 0;
+        }
+
+        .date-modal-content > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .date-modal-close {
+            position: absolute;
+            top: 0.8rem;
+            right: 0.8rem;
+            background: none;
+            border: none;
+            font-size: 1.3rem;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .date-modal-close:hover {
+            color: #000;
+        }
+
+        .date-modal-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1.2rem;
+            color: #333;
+            text-align: center;
+        }
+
+        .date-modal-text {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: #333;
+            margin-bottom: 0.8rem;
+            white-space: pre-line;
+        }
+
+        .date-modal-date-en {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 1.2rem;
+        }
+
+        .date-modal-actions {
+            display: flex;
+            gap: 0.8rem;
+            margin-top: 1.5rem;
+        }
+
+        .date-modal-btn {
+            flex: 1;
+            padding: 0.6rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+
+        .date-modal-btn:hover {
+            background: #f0f8ff;
+            border-color: var(--calendar-green);
+        }
+
+        /* Holidays Sidebar */
+        .holidays-sidebar {
+            width: 40%;
+            background: white;
+            border-left: 1px solid var(--border-color);
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .holiday-item {
+            display: flex;
+            gap: 0.8rem;
+            margin-bottom: 1rem;
+        }
+
+        .holiday-date {
+            text-align: center;
+            min-width: 50px;
+        }
+
+        .holiday-day-name {
+            font-size: 0.7rem;
+            color: #666;
+            margin-bottom: 0.2rem;
+        }
+
+        .holiday-day-num {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .holiday-details h6 {
+            font-weight: 600;
+            margin: 0;
+            font-size: 0.85rem;
+            line-height: 1.3;
+        }
+
+        .holiday-details h6.holiday-red {
+            color: var(--holiday-red);
+        }
+
+        .holiday-details h6.event-blue {
+            color: var(--event-blue);
+        }
+
+        .holiday-details h6.buddhist-purple {
+            color: #9933cc;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .holidays-sidebar {
+                width: 40%;
+            }
+        }
+
+        @media (max-width: 991px) {
+            .calendar-container {
+                flex-direction: column;
+                height: auto;
+            }
+            
+            .calendar-main {
+                width: 100%;
+            }
+            
+            .holidays-sidebar {
+                width: 100%;
+                border-left: none;
+                border-top: 1px solid var(--border-color);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="calendar-header-bar">
+        <div class="header-nav">
+            <button class="nav-arrow btn-prev-month">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="nav-arrow btn-refresh">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+            <button class="nav-arrow btn-next-month">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+            <h1 class="header-title" id="headerTitle"></h1>
+        </div>
+        <div class="header-info">
+            <div class="lunar-info" id="lunarInfo"></div>
+            <div class="lang-toggle" id="langToggle">
+                <span class="lang-flag">🇬🇧</span>
+                <span id="langText">English</span>
+            </div>
+            <button class="nav-arrow">
+                <i class="fas fa-cog"></i>
+            </button>
+            <button class="nav-arrow">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="calendar-container">
+        <!-- Calendar Section -->
+        <div class="calendar-main">
+            <!-- Weekdays Header -->
+            <div class="calendar-weekdays-row">
+                <div class="weekday-cell" id="weekday0"></div>
+                <div class="weekday-cell" id="weekday1"></div>
+                <div class="weekday-cell" id="weekday2"></div>
+                <div class="weekday-cell" id="weekday3"></div>
+                <div class="weekday-cell" id="weekday4"></div>
+                <div class="weekday-cell" id="weekday5"></div>
+                <div class="weekday-cell" id="weekday6"></div>
+            </div>
+            
+            <!-- Calendar Body -->
+            <div class="calendar-body" id="calendarBody"></div>
+        </div>
+
+        <!-- Holidays Sidebar -->
+        <div class="holidays-sidebar" id="holidaysSidebar"></div>
+    </div>
+
+    <!-- Date Info Modal -->
+    <div class="date-modal" id="dateModal">
+        <div class="date-modal-content">
+            <button class="date-modal-close" onclick="closeDateModal()">×</button>
+            <div class="date-modal-title" id="modalTitle"></div>
+            <div class="date-modal-text" id="modalText"></div>
+            <div class="date-modal-date-en" id="modalDateEn"></div>
+            <div class="date-modal-actions">
+                <button class="date-modal-btn" onclick="changeRendering()">
+                    <i class="fas fa-sync-alt"></i>
+                    <span id="btnChangeText">Change Rendering</span>
+                </button>
+                <button class="date-modal-btn" onclick="copyChoice()">
+                    <i class="fas fa-copy"></i>
+                    <span id="btnCopyChoiceText">Copy text (choice)</span>
+                </button>
+                <button class="date-modal-btn" onclick="copyText()">
+                    <i class="fas fa-copy"></i>
+                    <span id="btnCopyText">Copy text</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- MomentKH Library -->
+    <script src="https://cdn.jsdelivr.net/gh/ThyrithSor/momentkh@3.0.3/momentkh.js"></script>
+    
+    <script>
+        $(document).ready(function() {
+            let currentDate = new Date();
+            let currentLanguage = 'en';
+            let selectedDateInfo = null;
+
+            // Cambodian Public Holidays and Events
+            const holidays = {
+                '2026-01-01': { en: 'New Year\'s Day', kh: 'ថ្ងៃចូលឆ្នាំសាកល', isRestDay: true },
+                '2026-01-07': { en: 'Victory Over Genocide Day', kh: 'ទិវាជ័យជម្នះលើរបបប្រល័យពូជសាសន៍', isRestDay: true },
+                '2026-03-08': { en: 'International Women\'s Day', kh: 'ទិវាអន្តរជាតិនារី', isRestDay: true },
+                '2026-04-05': { en: 'Tomb-Sweeping Day (Qingming Festival)', kh: 'ទិវាសម្អាតផ្នូរ', isRestDay: false },
+                '2026-04-07': { en: 'World Health Day', kh: 'ទិវាសុខភាពពិភពលោក', isRestDay: false },
+                '2026-04-08': { en: 'International Buddhist Day', kh: 'ទិវាពុទ្ធសាសនិកអន្តរជាតិ', isRestDay: false },
+                '2026-04-14': { en: 'Khmer New Year - Maha Songkran at 10:48 AM', kh: 'ចូលឆ្នាំខ្មែរ ព្រះគុណបុស្សី ព្រាំព្រូល្វកេ ម៉ោងថ្ងៃត្រង់ ១០:៤៨ AM', isRestDay: true },
+                '2026-04-15': { en: 'Khmer New Year - Vara Vanabat', kh: 'ចូលឆ្នាំខ្មែរ វារៈវ័នបត', isRestDay: true },
+                '2026-04-16': { en: 'Khmer New Year - Vara Loeng Sak', kh: 'ចូលឆ្នាំខ្មែរ ថ្ងៃឡើងស័ក', isRestDay: true },
+                '2026-04-28': { en: 'World Day for Safety and Health at Work', kh: 'ទិវាពិភពលោកសម្រាប់សុវត្ថិភាព និងសុខភាពការងារ ឆ្នាំ២០២៦', isRestDay: false },
+                '2026-04-30': { en: 'Cambodia joined The Association of Southeast Asian Nations (ASEAN)', kh: 'កម្ពុជាចូលរួមជាមួយអាស៊ាន ឆ្នាំ១៩៩៩', isRestDay: false },
+                '2026-05-01': { en: 'Labour Day', kh: 'ទិវាពលកម្មអន្តរជាតិ', isRestDay: true },
+                '2026-05-14': { en: 'Royal Ploughing Ceremony', kh: 'ព្រះរាជពិធីច្រត់ព្រះនង្គ័ល', isRestDay: true },
+                '2026-06-01': { en: 'Children\'s Day', kh: 'ទិវាកុមារអន្តរជាតិ', isRestDay: true },
+                '2026-06-18': { en: 'Queen\'s Birthday', kh: 'ព្រះជន្មព្រះមហាក្សត្រី', isRestDay: true },
+                '2026-09-24': { en: 'Constitution Day', kh: 'ទិវារដ្ឋធម្មនុញ្ញ', isRestDay: true },
+                '2026-10-15': { en: 'Mourning King Father', kh: 'ប្រារព្ធទុក្ខព្រះបាទ', isRestDay: true },
+                '2026-10-29': { en: 'King\'s Birthday', kh: 'ព្រះជន្មព្រះមហាក្សត្រ', isRestDay: true },
+                '2026-11-09': { en: 'Independence Day', kh: 'ទិវាឯករាជ្យជាតិ', isRestDay: true },
+            };
+
+            // Buddhist Ceremonies and Events (not rest days, just ceremonial)
+            const buddhistEvents = {
+                '2026-02-02': { en: 'Meak Bochea', kh: 'ពិធីបុណ្យមាឃបូជា' },
+                '2026-02-11': { en: 'Kitchen God Festival', kh: 'ថ្វាយបង្គំព្រះភូមិ' },
+                '2026-02-16': { en: 'Chinese New Year\'s Eve', kh: 'ថ្ងៃចូលឆ្នាំចិន' },
+                '2026-02-17': { en: 'Chinese New Year', kh: 'ចូលឆ្នាំចិន' },
+                '2026-02-18': { en: 'Chinese New Year', kh: 'ចូលឆ្នាំចិន' },
+                '2026-02-19': { en: 'Chinese New Year', kh: 'ចូលឆ្នាំចិន' },
+                '2026-05-12': { en: 'Visakha Bochea', kh: 'ពិធីបុណ្យវិសាខបូជា' },
+                '2026-07-09': { en: 'Asalha Bochea', kh: 'ពិធីបុណ្យអាសាឡ្ហបូជា' },
+                '2026-07-10': { en: 'Buddhist Lent Begins', kh: 'ចូលវស្សា' },
+                '2026-10-07': { en: 'Pchum Ben', kh: 'ពិធីបុណ្យភ្ជុំបិណ្ឌ' },
+                '2026-10-08': { en: 'Pchum Ben', kh: 'ពិធីបុណ្យភ្ជុំបិណ្ឌ' },
+                '2026-10-09': { en: 'Pchum Ben', kh: 'ពិធីបុណ្យភ្ជុំបិណ្ឌ' },
+                '2026-11-03': { en: 'Water Festival', kh: 'ពិធីបុណ្យអុំទូក' },
+                '2026-11-04': { en: 'Water Festival', kh: 'ពិធីបុណ្យអុំទូក' },
+                '2026-11-05': { en: 'Water Festival', kh: 'ពិធីបុណ្យអុំទូក' },
+            };
+
+            // Translations
+            const translations = {
+                en: {
+                    months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+                    daysShort: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+                    daysFull: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+                    shaveDay: 'Shave Day',
+                    fullMoon: 'Full Moon',
+                    koeut: 'Koeut',
+                    roach: 'Roach',
+                    today: 'Today'
+                },
+                kh: {
+                    months: ['មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ'],
+                    daysShort: ['អាទិត្យ', 'ចន្ទ', 'អង្គារ', 'ពុធ', 'ព្រហស្បតិ៍', 'សុក្រ', 'សៅរ៍'],
+                    daysFull: ['អាទិត្យ', 'ចន្ទ', 'អង្គារ', 'ពុធ', 'ព្រហស្បតិ៍', 'សុក្រ', 'សៅរ៍'],
+                    shaveDay: 'ថ្ងៃកោរ',
+                    fullMoon: 'ពេញបូណ៌មី',
+                    koeut: 'កើត',
+                    roach: 'រោច',
+                    today: 'ថ្ងៃនេះ'
+                }
+            };
+
+            // Khmer Number Converter
+            function toKhmerNumber(num) {
+                if (currentLanguage !== 'kh') return num;
+                const khmerDigits = ['០', '១', '២', '៣', '៤', '៥', '៦', '៧', '៨', '៩'];
+                return String(num).split('').map(d => khmerDigits[parseInt(d)] || d).join('');
+            }
+
+            // Get Buddhist Date Info
+            function getBuddhistDateInfo(date) {
+                try {
+                    const year = date.getFullYear();
+                    const month = date.getMonth() + 1;
+                    const day = date.getDate();
+                    
+                    const khmerDate = momentkh.fromGregorian(year, month, day);
+                    
+                    const lunarDay = khmerDate.khmer.day;
+                    const moonPhase = khmerDate.khmer.moonPhase;
+                    const monthName = khmerDate.khmer.monthName;
+                    const animalYearName = khmerDate.khmer.animalYearName;
+                    const sakName = khmerDate.khmer.sakName;
+                    const beYear = khmerDate.khmer.beYear;
+                    const dayOfWeekName = khmerDate.khmer.dayOfWeekName;
+                    
+                    const isBuddhistHolyDay = 
+                        (moonPhase === 0 && (lunarDay === 1 || lunarDay === 8 || lunarDay === 15)) ||
+                        (moonPhase === 1 && (lunarDay === 8 || lunarDay === 15));
+                    
+                    const isShaveDay = moonPhase === 1 && (lunarDay === 14 || lunarDay === 15);
+                    const isFullMoon = moonPhase === 0 && lunarDay === 15;
+                    
+                    let lunarDateStr = '';
+                    if (currentLanguage === 'en') {
+                        lunarDateStr = `${lunarDay} ${moonPhase === 0 ? translations.en.koeut : translations.en.roach}`;
+                    } else {
+                        const khDay = toKhmerNumber(lunarDay);
+                        lunarDateStr = `${khDay}${moonPhase === 0 ? translations.kh.koeut : translations.kh.roach}`;
+                    }
+                    
+                    return {
+                        lunarDay,
+                        moonPhase,
+                        monthName,
+                        animalYearName,
+                        sakName,
+                        beYear,
+                        dayOfWeekName,
+                        isBuddhistHolyDay,
+                        isShaveDay,
+                        isFullMoon,
+                        lunarDateStr,
+                        fullKhmerDate: khmerDate
+                    };
+                } catch (e) {
+                    console.error('MomentKH error:', e);
+                    return null;
+                }
+            }
+
+            // Get lunar month range for header
+            function getLunarMonthRange(year, month) {
+                try {
+                    const firstDay = momentkh.fromGregorian(year, month, 1);
+                    const lastDay = momentkh.fromGregorian(year, month, new Date(year, month, 0).getDate());
+                    
+                    const firstMonth = firstDay.khmer.monthName;
+                    const lastMonth = lastDay.khmer.monthName;
+                    const animalYear = firstDay.khmer.animalYearName;
+                    const beYear = currentLanguage === 'kh' ? toKhmerNumber(firstDay.khmer.beYear) : firstDay.khmer.beYear;
+                    
+                    if (firstMonth === lastMonth) {
+                        return `${firstMonth}, ${animalYear} ${currentLanguage === 'en' ? 'B.E.' : 'ព.ស.'} ${beYear}`;
+                    } else {
+                        return `${firstMonth} - ${lastMonth}, ${animalYear} ${currentLanguage === 'en' ? 'B.E.' : 'ព.ស.'} ${beYear}`;
+                    }
+                } catch (e) {
+                    return '';
+                }
+            }
+
+            // Format date for key
+            function formatDateKey(date) {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+
+            // Show date modal
+            window.showDateModal = function(date) {
+                const buddhistInfo = getBuddhistDateInfo(date);
+                if (!buddhistInfo) return;
+
+                selectedDateInfo = {
+                    date: date,
+                    buddhistInfo: buddhistInfo
+                };
+
+                // Add Buddha background if holy day
+                if (buddhistInfo.isBuddhistHolyDay) {
+                    $('.date-modal-content').addClass('has-buddha-bg');
+                } else {
+                    $('.date-modal-content').removeClass('has-buddha-bg');
+                }
+
+                const today = new Date();
+                const isToday = date.toDateString() === today.toDateString();
+
+                const dayOfWeek = translations[currentLanguage].daysFull[date.getDay()];
+                const gregorianDay = currentLanguage === 'kh' ? toKhmerNumber(date.getDate()) : date.getDate();
+                const gregorianMonth = translations[currentLanguage].months[date.getMonth()];
+                const gregorianYear = currentLanguage === 'kh' ? toKhmerNumber(date.getFullYear()) : date.getFullYear();
+                
+                // Title
+                if (currentLanguage === 'kh') {
+                    if (isToday) {
+                        $('#modalTitle').text('ថ្ងៃនេះ:');
+                    } else {
+                        $('#modalTitle').text(`ថ្ងៃទី${gregorianDay}ខែ${gregorianMonth} ឆ្នាំ${gregorianYear}`);
+                    }
+                } else {
+                    if (isToday) {
+                        $('#modalTitle').text('Today');
+                    } else {
+                        $('#modalTitle').text(`${gregorianMonth} ${gregorianDay}, ${gregorianYear}`);
+                    }
+                }
+                
+                // Modal text
+                if (currentLanguage === 'kh') {
+                    // Khmer: Buddhist date first, then "ត្រូវនឹង", then Gregorian
+                    const khmerFullDate = momentkh.format(buddhistInfo.fullKhmerDate, "ថ្ងៃW dN ខែm ឆ្នាំa ព.ស.b");
+                    const gregorianPart = `ត្រូវនឹង ថ្ងៃទី${gregorianDay} ${gregorianMonth} ${gregorianYear}`;
+                    let modalText = `${khmerFullDate} ${gregorianPart}`;
+                    
+                    // Add all events for this day
+                    const dateKey = formatDateKey(date);
+                    const holiday = holidays[dateKey];
+                    const buddhistEvent = buddhistEvents[dateKey];
+                    
+                    if (holiday || buddhistEvent) {
+                        modalText += '\n';
+                        if (holiday) {
+                            modalText += `\n• ${holiday.kh}`;
+                        }
+                        if (buddhistEvent) {
+                            modalText += `\n• ${buddhistEvent.kh}`;
+                        }
+                    }
+                    
+                    $('#modalText').text(modalText);
+                    $('#modalDateEn').text(`${translations.en.months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`);
+                } else {
+                    // English: Gregorian first, then "which in Lunar is..."
+                    const moonPhaseText = buddhistInfo.moonPhase === 0 ? 'Koeut' : 'Roach';
+                    let text = `${dayOfWeek}, ${gregorianMonth} ${gregorianDay}, ${gregorianYear} which in Lunar is day of ${buddhistInfo.lunarDay} ${moonPhaseText}, month of ${buddhistInfo.monthName}, year of ${buddhistInfo.animalYearName}, ${buddhistInfo.sakName} era, Buddhist era ${buddhistInfo.beYear}`;
+                    
+                    // Add all events for this day
+                    const dateKey = formatDateKey(date);
+                    const holiday = holidays[dateKey];
+                    const buddhistEvent = buddhistEvents[dateKey];
+                    
+                    if (holiday || buddhistEvent) {
+                        text += '\n';
+                        if (holiday) {
+                            text += `\n• ${holiday.en}`;
+                        }
+                        if (buddhistEvent) {
+                            text += `\n• ${buddhistEvent.en}`;
+                        }
+                    }
+                    
+                    $('#modalText').text(text);
+                    $('#modalDateEn').text('');
+                }
+                
+                $('#dateModal').addClass('show');
+            };
+
+            window.closeDateModal = function() {
+                $('#dateModal').removeClass('show');
+                selectedDateInfo = null;
+            };
+
+            window.changeRendering = function() {
+                alert(currentLanguage === 'en' ? 'Change Rendering feature' : 'មុខងារផ្លាស់ប្តូរការបង្ហាញ');
+            };
+
+            window.copyChoice = function() {
+                if (!selectedDateInfo) return;
+                const text = $('#modalText').text();
+                navigator.clipboard.writeText(text).then(() => {
+                    alert(currentLanguage === 'en' ? 'Copied to clipboard!' : 'ចម្លងទៅក្ដារតម្បៀតខ្ទាស់!');
+                });
+            };
+
+            window.copyText = function() {
+                if (!selectedDateInfo) return;
+                const text = $('#modalText').text() + '\n' + $('#modalDateEn').text();
+                navigator.clipboard.writeText(text).then(() => {
+                    alert(currentLanguage === 'en' ? 'Copied to clipboard!' : 'ចម្លងទៅក្ដារតម្បៀតខ្ទាស់!');
+                });
+            };
+
+            // Render Calendar
+            function renderCalendar() {
+                const year = currentDate.getFullYear();
+                const month = currentDate.getMonth();
+                
+                // Update header
+                const monthName = currentLanguage === 'en' 
+                    ? `${translations.en.months[month]} ${year}`
+                    : `${translations.kh.months[month]} ${year}`;
+                $('#headerTitle').text(monthName);
+                
+                // Update lunar info
+                $('#lunarInfo').text(getLunarMonthRange(year, month + 1));
+                
+                // Render weekdays
+                for (let i = 0; i < 7; i++) {
+                    $(`#weekday${i}`).text(translations[currentLanguage].daysShort[i]);
+                }
+                
+                // Render calendar body
+                const firstDay = new Date(year, month, 1).getDay();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                
+                let calendarHtml = '';
+                let dayCount = 1 - firstDay;
+                
+                // Always show 6 weeks
+                for (let week = 0; week < 6; week++) {
+                    calendarHtml += `<div class="calendar-row">`;
+                    
+                    // Day cells
+                    for (let day = 0; day < 7; day++) {
+                        const date = new Date(year, month, dayCount);
+                        const isCurrentMonth = date.getMonth() === month;
+                        calendarHtml += renderDay(date, !isCurrentMonth, day);
+                        dayCount++;
+                    }
+                    
+                    calendarHtml += `</div>`;
+                }
+                
+                $('#calendarBody').html(calendarHtml);
+                
+                // Render holidays sidebar
+                renderHolidaysSidebar(year, month);
+            }
+
+            function renderDay(date, isOtherMonth, dayOfWeek) {
+                const day = date.getDate();
+                const dateKey = formatDateKey(date);
+                const today = new Date();
+                const isToday = date.toDateString() === today.toDateString();
+                const holiday = holidays[dateKey];
+                const buddhistInfo = getBuddhistDateInfo(date);
+                
+                let classes = 'day-cell';
+                if (isOtherMonth) classes += ' other-month';
+                if (isToday) classes += ' today';
+                if (dayOfWeek === 0 || dayOfWeek === 6) classes += ' weekend';
+                if (holiday && holiday.isRestDay) classes += ' holiday';
+                
+                let html = `<div class="${classes}" onclick="showDateModal(new Date('${date.toISOString()}'))">`;
+                
+                // Day header with number and Buddhist icon
+                html += `<div class="day-header-row">`;
+                html += `<div class="day-number">${currentLanguage === 'kh' ? toKhmerNumber(day) : day}</div>`;
+                if (buddhistInfo && buddhistInfo.isBuddhistHolyDay) {
+                    html += `<img src="buddha-icon.png" class="buddhist-icon" alt="Buddhist Holy Day" />`;
+                }
+                html += `</div>`;
+                
+                // Lunar date
+                if (buddhistInfo && !isOtherMonth) {
+                    html += `<div class="lunar-date">${buddhistInfo.lunarDateStr}</div>`;
+                    
+                    // Special day markers
+                    if (buddhistInfo.isShaveDay) {
+                        html += `<div class="day-info special-day">${translations[currentLanguage].shaveDay}</div>`;
+                    }
+                    if (buddhistInfo.isFullMoon) {
+                        html += `<div class="day-info special-day">${translations[currentLanguage].fullMoon}</div>`;
+                    }
+                }
+                
+                // Holiday/Event text
+                if (holiday && !isOtherMonth) {
+                    const holidayText = currentLanguage === 'kh' ? holiday.kh : holiday.en;
+                    const textClass = holiday.isRestDay ? 'holiday-text' : 'event-text';
+                    html += `<div class="day-info ${textClass}">${holidayText}</div>`;
+                }
+                
+                // Buddhist event text (purple)
+                const buddhistEvent = buddhistEvents[dateKey];
+                if (buddhistEvent && !isOtherMonth) {
+                    const buddhistEventText = currentLanguage === 'kh' ? buddhistEvent.kh : buddhistEvent.en;
+                    html += `<div class="day-info buddhist-event-text">${buddhistEventText}</div>`;
+                }
+                
+                html += `</div>`;
+                return html;
+            }
+
+            function renderHolidaysSidebar(year, month) {
+                const monthEvents = [];
+                
+                // Add holidays
+                Object.keys(holidays).forEach(dateKey => {
+                    const date = new Date(dateKey);
+                    if (date.getFullYear() === year && date.getMonth() === month) {
+                        monthEvents.push({
+                            date: date,
+                            dateKey: dateKey,
+                            event: holidays[dateKey],
+                            type: 'holiday'
+                        });
+                    }
+                });
+                
+                // Add Buddhist events
+                Object.keys(buddhistEvents).forEach(dateKey => {
+                    const date = new Date(dateKey);
+                    if (date.getFullYear() === year && date.getMonth() === month) {
+                        monthEvents.push({
+                            date: date,
+                            dateKey: dateKey,
+                            event: buddhistEvents[dateKey],
+                            type: 'buddhist'
+                        });
+                    }
+                });
+                
+                monthEvents.sort((a, b) => a.date - b.date);
+                
+                let html = '';
+                monthEvents.forEach(item => {
+                    const dayName = translations[currentLanguage].daysShort[item.date.getDay()];
+                    const dayNum = currentLanguage === 'kh' ? toKhmerNumber(item.date.getDate()) : item.date.getDate();
+                    const eventName = currentLanguage === 'kh' ? item.event.kh : item.event.en;
+                    
+                    let colorClass = '';
+                    if (item.type === 'holiday') {
+                        colorClass = item.event.isRestDay ? 'holiday-red' : 'event-blue';
+                    } else if (item.type === 'buddhist') {
+                        colorClass = 'buddhist-purple';
+                    }
+                    
+                    html += `<div class="holiday-item">`;
+                    html += `<div class="holiday-date">`;
+                    html += `<div class="holiday-day-name">${dayName}</div>`;
+                    html += `<div class="holiday-day-num">${dayNum}</div>`;
+                    html += `</div>`;
+                    html += `<div class="holiday-details">`;
+                    html += `<h6 class="${colorClass}">${eventName}</h6>`;
+                    html += `</div>`;
+                    html += `</div>`;
+                });
+                
+                $('#holidaysSidebar').html(html);
+            }
+
+            // Update button labels when language changes
+            function updateButtonLabels() {
+                if (currentLanguage === 'kh') {
+                    $('#btnChangeText').text('ផ្លាស់ប្តូរការបង្ហាញ');
+                    $('#btnCopyChoiceText').text('ចម្លងអត្ថបទ (ជម្រើស)');
+                    $('#btnCopyText').text('ចម្លងអត្ថបទ');
+                } else {
+                    $('#btnChangeText').text('Change Rendering');
+                    $('#btnCopyChoiceText').text('Copy text (choice)');
+                    $('#btnCopyText').text('Copy text');
+                }
+            }
+
+            // Language Toggle
+            $('#langToggle').click(function() {
+                currentLanguage = currentLanguage === 'en' ? 'kh' : 'en';
+                const flag = currentLanguage === 'en' ? '🇬🇧' : '🇰🇭';
+                const text = currentLanguage === 'en' ? 'English' : 'ខ្មែរ';
+                $(this).find('.lang-flag').text(flag);
+                $(this).find('#langText').text(text);
+                
+                updateButtonLabels();
+                renderCalendar();
+            });
+
+            // Navigation
+            $('.btn-prev-month').click(function() {
+                currentDate.setMonth(currentDate.getMonth() - 1);
+                renderCalendar();
+            });
+
+            $('.btn-next-month').click(function() {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+                renderCalendar();
+            });
+
+            $('.btn-refresh').click(function() {
+                currentDate = new Date();
+                renderCalendar();
+            });
+
+            // Close modal on background click
+            $('#dateModal').click(function(e) {
+                if (e.target === this) {
+                    closeDateModal();
+                }
+            });
+
+            // Initialize
+            updateButtonLabels();
+            renderCalendar();
+            console.log('✅ Khmer Lunar Calendar loaded successfully!');
+        });
+    </script>
+</body>
+</html>
