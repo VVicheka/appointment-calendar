@@ -19,6 +19,7 @@ body {
     background-color: white;
     color: var(--text-dark);
     font-size: 14px;
+    overflow-x: hidden;
 }
 
 /* Header */
@@ -29,12 +30,19 @@ body {
     padding: 0.8rem 1.5rem;
     background: white;
     border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    flex-wrap: wrap;
+    gap: 0.5rem;
 }
 
 .header-nav {
     display: flex;
     align-items: center;
     gap: 1rem;
+    flex: 1;
+    min-width: 200px;
 }
 
 .nav-arrow {
@@ -43,29 +51,48 @@ body {
     font-size: 0.9rem;
     cursor: pointer;
     color: #333;
-    padding: 0.25rem;
+    padding: 0.5rem;
+    min-width: 36px;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s;
 }
 
 .nav-arrow:hover {
     color: var(--calendar-green);
+    background: var(--light-bg);
+}
+
+.nav-arrow:active {
+    transform: scale(0.95);
 }
 
 .header-title {
     font-size: 1.15rem;
     font-weight: 600;
     color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .header-info {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.5rem;
+    flex-wrap: wrap;
 }
 
 .lunar-info {
     font-size: 0.85rem;
     color: #333;
     font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .lang-toggle {
@@ -79,17 +106,25 @@ body {
     cursor: pointer;
     font-weight: 500;
     font-size: 0.85rem;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.lang-toggle:hover {
+    background: var(--light-bg);
 }
 
 .lang-flag {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
+    font-size: 16px;
 }
 
 /* Main Layout */
 .calendar-container {
     display: flex;
     height: calc(100vh - 80px);
+    overflow: hidden;
 }
 
 /* Calendar Section */
@@ -124,6 +159,7 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
 }
 
 .calendar-row {
@@ -131,38 +167,17 @@ body {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     border-bottom: 1px solid var(--border-color);
+    min-height: 100px;
 }
 
 .calendar-row:last-child {
     border-bottom: none;
 }
 
-/* Week Sidebar */
-.week-sidebar {
-    background: var(--calendar-green);
-    color: white;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    border-right: 1px solid var(--border-color);
-    padding: 0.5rem;
-    font-weight: 600;
-}
-
-.week-number {
-    font-size: 1.5rem;
-}
-
-.week-lunar {
-    font-size: 0.85rem;
-}
-
 /* Day Cell */
 .day-cell {
     border-right: 1px solid var(--border-color);
     padding: 0.3rem;
-    margin: 0 0.05rem;
     background: white;
     position: relative;
     display: flex;
@@ -170,6 +185,7 @@ body {
     cursor: pointer;
     transition: background 0.2s;
     overflow: hidden;
+    min-height: 80px;
 }
 
 .day-cell:hover {
@@ -185,15 +201,13 @@ body {
     opacity: 0.6;
 }
 
-/* Make holidays fully visible even in other-month dates */
 .day-cell.other-month .holiday-text,
 .day-cell.other-month .buddhist-event-text {
     opacity: 1 !important;
     font-weight: 600 !important;
-    color: #ff0000 !important; /* Force bright red for visibility test */
+    color: #ff0000 !important;
 }
 
-/* Reset day-number and lunar-date for other months but keep holidays visible */
 .day-cell.other-month .day-number,
 .day-cell.other-month .lunar-date {
     opacity: 0.5;
@@ -277,6 +291,7 @@ body {
     z-index: 1000;
     align-items: center;
     justify-content: center;
+    padding: 1rem;
 }
 
 .date-modal.show {
@@ -288,9 +303,11 @@ body {
     border-radius: 12px;
     padding: 1.5rem;
     max-width: 500px;
-    width: 90%;
+    width: 100%;
     position: relative;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
 .date-modal-content.has-buddha-bg {
@@ -326,10 +343,18 @@ body {
     font-size: 1.3rem;
     cursor: pointer;
     color: #666;
+    min-width: 36px;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
 }
 
 .date-modal-close:hover {
     color: #000;
+    background: #f0f0f0;
 }
 
 .date-modal-title {
@@ -338,6 +363,7 @@ body {
     margin-bottom: 1.2rem;
     color: #333;
     text-align: center;
+    padding-right: 2rem;
 }
 
 .date-modal-text {
@@ -346,6 +372,7 @@ body {
     color: #333;
     margin-bottom: 0.8rem;
     white-space: pre-line;
+    word-wrap: break-word;
 }
 
 .date-modal-date-en {
@@ -358,10 +385,12 @@ body {
     display: flex;
     gap: 0.8rem;
     margin-top: 1.5rem;
+    flex-wrap: wrap;
 }
 
 .date-modal-btn {
     flex: 1;
+    min-width: 120px;
     padding: 0.6rem;
     border: 2px solid var(--border-color);
     border-radius: 8px;
@@ -398,49 +427,6 @@ body {
     border-bottom: 2px solid var(--calendar-green);
 }
 
-.holiday-item {
-    display: flex;
-    gap: 0.8rem;
-    margin-bottom: 1rem;
-}
-
-.holiday-date {
-    text-align: center;
-    min-width: 50px;
-}
-
-.holiday-day-name {
-    font-size: 0.7rem;
-    color: #666;
-    margin-bottom: 0.2rem;
-}
-
-.holiday-day-num {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: #333;
-}
-
-.holiday-details h6 {
-    font-weight: 500;
-    margin: 0;
-    font-size: 0.85rem;
-    line-height: 1.3;
-}
-
-.holiday-details h6.holiday-red {
-    color: var(--holiday-red);
-}
-
-.holiday-details h6.event-blue {
-    color: var(--event-blue);
-}
-
-.holiday-details h6.buddhist-purple {
-    color: #9933cc;
-}
-
-/* Appointment Items */
 .appointment-item {
     background: #f8f9fa;
     border-left: 4px solid var(--calendar-green);
@@ -481,26 +467,739 @@ body {
     font-size: 0.9rem;
 }
 
-/* Responsive */
-@media (max-width: 1200px) {
-    .holidays-sidebar {
-        width: 40%;
+/* ========================================== */
+/* QUICK ACTION DROPDOWN */
+/* ========================================== */
+
+.quick-action-wrapper {
+    position: relative;
+}
+
+.quick-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--calendar-green);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 179, 0, 0.2);
+    white-space: nowrap;
+}
+
+.quick-action-btn:hover {
+    background: var(--calendar-green-dark);
+    box-shadow: 0 4px 8px rgba(0, 179, 0, 0.3);
+    transform: translateY(-1px);
+}
+
+.quick-action-btn:active {
+    transform: translateY(0);
+}
+
+.quick-action-btn i {
+    font-size: 1.1rem;
+}
+
+.quick-action-btn[aria-expanded="true"] {
+    background: var(--calendar-green-dark);
+}
+
+.quick-action-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    min-width: 280px;
+    max-width: 320px;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+}
+
+.quick-action-dropdown.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.quick-action-header {
+    padding: 1rem 1.2rem;
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 600;
+    color: var(--text-dark);
+    font-size: 0.95rem;
+}
+
+.quick-action-menu {
+    padding: 0.5rem;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.quick-action-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+    padding: 0.8rem 1rem;
+    background: none;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s ease;
+    color: var(--text-dark);
+}
+
+.quick-action-item:hover {
+    background: var(--light-bg);
+    transform: translateX(4px);
+}
+
+.quick-action-item:active {
+    background: #e9ecef;
+}
+
+.quick-action-item i {
+    font-size: 1.2rem;
+    color: var(--calendar-green);
+    width: 24px;
+    text-align: center;
+}
+
+.quick-action-item .action-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.quick-action-item:focus {
+    outline: 2px solid var(--calendar-green);
+    outline-offset: -2px;
+    background: var(--light-bg);
+}
+
+/* Action Modal */
+.action-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.3s ease;
+    padding: 1rem;
+}
+
+.action-modal.show {
+    display: flex;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
     }
 }
 
+.action-modal-content {
+    background: white;
+    border-radius: 16px;
+    padding: 0;
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.action-modal-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #666;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+    z-index: 1;
+}
+
+.action-modal-close:hover {
+    background: #f0f0f0;
+    color: #000;
+}
+
+.action-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem 2rem;
+    background: linear-gradient(135deg, var(--calendar-green) 0%, var(--calendar-green-dark) 100%);
+    color: white;
+    position: relative;
+}
+
+.action-modal-icon {
+    font-size: 2rem;
+}
+
+.action-modal-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin: 0;
+    padding-right: 2rem;
+}
+
+.action-modal-body {
+    padding: 2rem;
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* Form Styles */
+.action-form-group {
+    margin-bottom: 1.5rem;
+}
+
+.action-form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--text-dark);
+    font-size: 0.9rem;
+}
+
+.action-form-input,
+.action-form-select,
+.action-form-textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+
+.action-form-input:focus,
+.action-form-select:focus,
+.action-form-textarea:focus {
+    outline: none;
+    border-color: var(--calendar-green);
+    box-shadow: 0 0 0 3px rgba(0, 179, 0, 0.1);
+}
+
+.action-form-textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.action-form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+    flex-wrap: wrap;
+}
+
+.action-form-btn {
+    flex: 1;
+    min-width: 120px;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.action-form-btn-primary {
+    background: var(--calendar-green);
+    color: white;
+}
+
+.action-form-btn-primary:hover {
+    background: var(--calendar-green-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 179, 0, 0.2);
+}
+
+.action-form-btn-secondary {
+    background: #f0f0f0;
+    color: var(--text-dark);
+}
+
+.action-form-btn-secondary:hover {
+    background: #e0e0e0;
+}
+
+/* ========================================== */
+/* RESPONSIVE DESIGN */
+/* ========================================== */
+
+/* Tablets (Portrait and Landscape) */
+@media (max-width: 1200px) {
+    .calendar-main {
+        width: 55%;
+    }
+    
+    .holidays-sidebar {
+        width: 45%;
+    }
+    
+    .day-number {
+        font-size: 1.2rem;
+    }
+    
+    .day-info {
+        font-size: 0.6rem;
+    }
+}
+
+/* Tablets (Portrait) and Small Desktops */
 @media (max-width: 991px) {
+    .calendar-header-bar {
+        padding: 0.6rem 1rem;
+    }
+    
+    .header-title {
+        font-size: 1rem;
+    }
+    
+    .lunar-info {
+        font-size: 0.75rem;
+    }
+    
     .calendar-container {
         flex-direction: column;
         height: auto;
+        min-height: calc(100vh - 80px);
     }
     
     .calendar-main {
         width: 100%;
+        min-height: 500px;
     }
     
     .holidays-sidebar {
         width: 100%;
         border-left: none;
         border-top: 1px solid var(--border-color);
+        max-height: 400px;
+    }
+    
+    .calendar-row {
+        min-height: 80px;
+    }
+    
+    .day-number {
+        font-size: 1.1rem;
+    }
+    
+    .lunar-date {
+        font-size: 0.65rem;
+    }
+}
+
+/* Mobile Devices */
+@media (max-width: 768px) {
+    body {
+        font-size: 13px;
+    }
+    
+    .calendar-header-bar {
+        padding: 0.5rem 0.75rem;
+        gap: 0.25rem;
+    }
+    
+    .header-nav {
+        gap: 0.5rem;
+        min-width: auto;
+    }
+    
+    .nav-arrow {
+        padding: 0.4rem;
+        font-size: 0.85rem;
+        min-width: 32px;
+        min-height: 32px;
+    }
+    
+    .header-title {
+        font-size: 0.9rem;
+    }
+    
+    .header-info {
+        gap: 0.4rem;
+    }
+    
+    .lunar-info {
+        display: none; /* Hide on mobile to save space */
+    }
+    
+    .lang-toggle {
+        padding: 0.3rem 0.6rem;
+        font-size: 0.75rem;
+    }
+    
+    .lang-flag {
+        width: 18px;
+        height: 18px;
+        font-size: 14px;
+    }
+    
+    /* Quick Action Button - Show only icon on mobile */
+    .quick-action-btn .quick-action-text {
+        display: none;
+    }
+    
+    .quick-action-btn {
+        padding: 0.5rem;
+        min-width: 40px;
+    }
+    
+    .quick-action-dropdown {
+        right: -50px;
+        min-width: 260px;
+        max-width: 90vw;
+    }
+    
+    /* Calendar Grid */
+    .weekday-cell {
+        padding: 0.4rem 0.2rem;
+        font-size: 0.75rem;
+    }
+    
+    .calendar-row {
+        min-height: 70px;
+    }
+    
+    .day-cell {
+        padding: 0.2rem;
+        min-height: 60px;
+    }
+    
+    .day-number {
+        font-size: 1rem;
+    }
+    
+    .buddhist-icon {
+        width: 12px;
+        height: 12px;
+    }
+    
+    .lunar-date {
+        font-size: 0.6rem;
+    }
+    
+    .day-info {
+        font-size: 0.55rem;
+        line-height: 1.2;
+    }
+    
+    /* Modals */
+    .date-modal,
+    .action-modal {
+        padding: 0.5rem;
+    }
+    
+    .date-modal-content,
+    .action-modal-content {
+        width: 95%;
+        max-height: 85vh;
+        border-radius: 12px;
+    }
+    
+    .date-modal-content {
+        padding: 1rem;
+    }
+    
+    .date-modal-title {
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+    
+    .date-modal-text {
+        font-size: 0.8rem;
+        line-height: 1.5;
+    }
+    
+    .date-modal-actions {
+        flex-direction: column;
+    }
+    
+    .date-modal-btn {
+        width: 100%;
+        min-width: auto;
+    }
+    
+    .action-modal-header {
+        padding: 1rem 1.5rem;
+    }
+    
+    .action-modal-icon {
+        font-size: 1.5rem;
+    }
+    
+    .action-modal-title {
+        font-size: 1.1rem;
+    }
+    
+    .action-modal-body {
+        padding: 1.5rem;
+    }
+    
+    .action-form-actions {
+        flex-direction: column;
+    }
+    
+    .action-form-btn {
+        width: 100%;
+        min-width: auto;
+    }
+    
+    /* Sidebar */
+    .holidays-sidebar {
+        padding: 0.75rem;
+        max-height: 350px;
+    }
+    
+    .sidebar-title {
+        font-size: 0.9rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .appointment-item {
+        padding: 0.6rem;
+        margin-bottom: 0.6rem;
+    }
+    
+    .appointment-date {
+        font-size: 0.7rem;
+    }
+    
+    .appointment-title {
+        font-size: 0.8rem;
+    }
+    
+    .appointment-time {
+        font-size: 0.7rem;
+    }
+}
+
+/* Small Mobile Devices */
+@media (max-width: 480px) {
+    .calendar-header-bar {
+        padding: 0.4rem 0.5rem;
+    }
+    
+    .header-nav {
+        gap: 0.25rem;
+    }
+    
+    .nav-arrow {
+        padding: 0.3rem;
+        min-width: 28px;
+        min-height: 28px;
+        font-size: 0.8rem;
+    }
+    
+    .header-title {
+        font-size: 0.85rem;
+    }
+    
+    .header-info {
+        gap: 0.25rem;
+    }
+    
+    .lang-toggle {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.7rem;
+    }
+    
+    .weekday-cell {
+        padding: 0.3rem 0.1rem;
+        font-size: 0.7rem;
+    }
+    
+    .calendar-row {
+        min-height: 60px;
+    }
+    
+    .day-cell {
+        padding: 0.15rem;
+        min-height: 50px;
+    }
+    
+    .day-number {
+        font-size: 0.9rem;
+    }
+    
+    .lunar-date {
+        font-size: 0.55rem;
+    }
+    
+    .day-info {
+        font-size: 0.5rem;
+    }
+    
+    .buddhist-icon {
+        width: 10px;
+        height: 10px;
+    }
+    
+    .date-modal-content,
+    .action-modal-content {
+        max-height: 90vh;
+    }
+    
+    .action-modal-body {
+        padding: 1rem;
+    }
+}
+
+/* Landscape Orientation for Mobile */
+@media (max-width: 991px) and (orientation: landscape) {
+    .calendar-container {
+        height: auto;
+    }
+    
+    .calendar-main {
+        min-height: 400px;
+    }
+    
+    .holidays-sidebar {
+        max-height: 300px;
+    }
+    
+    .calendar-row {
+        min-height: 60px;
+    }
+}
+
+/* Touch Device Improvements */
+@media (hover: none) and (pointer: coarse) {
+    /* Increase touch targets */
+    .nav-arrow,
+    .quick-action-btn,
+    .lang-toggle,
+    .date-modal-close,
+    .action-modal-close {
+        min-width: 44px;
+        min-height: 44px;
+    }
+    
+    .quick-action-item {
+        padding: 1rem;
+    }
+    
+    .day-cell {
+        min-height: 70px;
+    }
+    
+    /* Remove hover effects */
+    .day-cell:hover,
+    .nav-arrow:hover,
+    .quick-action-btn:hover,
+    .appointment-item:hover {
+        transform: none;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .calendar-header-bar {
+        border-bottom: 2px solid #000;
+    }
+    
+    .header-info,
+    .quick-action-wrapper,
+    .holidays-sidebar {
+        display: none;
+    }
+    
+    .calendar-main {
+        width: 100%;
+    }
+    
+    .calendar-container {
+        height: auto;
+    }
+    
+    .date-modal,
+    .action-modal {
+        display: none !important;
+    }
+}
+
+/* Accessibility - Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    
+    .quick-action-dropdown,
+    .action-modal,
+    .action-modal-content {
+        animation: none;
+        transition: none;
+    }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+    .calendar-header-bar,
+    .calendar-weekdays-row,
+    .day-cell,
+    .date-modal-content,
+    .action-modal-content {
+        border: 2px solid #000;
+    }
+    
+    .quick-action-btn,
+    .action-form-btn-primary {
+        border: 2px solid #000;
     }
 }

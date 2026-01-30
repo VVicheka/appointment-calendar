@@ -34,6 +34,50 @@
         </div>
         <div class="header-info">
             <div class="lunar-info" id="lunarInfo"></div>
+            
+            <!-- Quick Action Dropdown -->
+            <div class="quick-action-wrapper">
+                <button class="quick-action-btn" id="quickActionBtn" aria-label="Quick Actions" aria-expanded="false">
+                    <i class="fas fa-plus-circle"></i>
+                    <span class="quick-action-text" id="quickActionText">New</span>
+                </button>
+                <div class="quick-action-dropdown" id="quickActionDropdown">
+                    <div class="quick-action-header">
+                        <span id="dropdownTitle">Quick Actions</span>
+                    </div>
+                    <div class="quick-action-menu">
+                        <button class="quick-action-item" data-action="patient" data-permission="staff">
+                            <i class="fas fa-user-plus"></i>
+                            <span class="action-label" data-en="New Patient" data-kh="អ្នកជំងឺថ្មី">New Patient</span>
+                        </button>
+                        <button class="quick-action-item" data-action="appointment" data-permission="staff">
+                            <i class="fas fa-calendar-plus"></i>
+                            <span class="action-label" data-en="New Appointment" data-kh="ការណាត់ជួបថ្មី">New Appointment</span>
+                        </button>
+                        <button class="quick-action-item" data-action="lab-order" data-permission="clinical">
+                            <i class="fas fa-flask"></i>
+                            <span class="action-label" data-en="New Lab Order" data-kh="សំណើមន្ទីរពិសោធន៍">New Lab Order</span>
+                        </button>
+                        <button class="quick-action-item" data-action="payment" data-permission="staff">
+                            <i class="fas fa-dollar-sign"></i>
+                            <span class="action-label" data-en="New Payment" data-kh="ការទូទាត់ថ្មី">New Payment</span>
+                        </button>
+                        <button class="quick-action-item" data-action="employee" data-permission="admin">
+                            <i class="fas fa-user-tie"></i>
+                            <span class="action-label" data-en="New Employee" data-kh="បុគ្គលិកថ្មី">New Employee</span>
+                        </button>
+                        <button class="quick-action-item" data-action="prescription" data-permission="clinical">
+                            <i class="fas fa-prescription"></i>
+                            <span class="action-label" data-en="New Prescription" data-kh="វេជ្ជបញ្ជាថ្មី">New Prescription</span>
+                        </button>
+                        <button class="quick-action-item" data-action="services" data-permission="staff">
+                            <i class="fas fa-hand-holding-medical"></i>
+                            <span class="action-label" data-en="New Services" data-kh="សេវាកម្មថ្មី">New Services</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
             <div class="lang-toggle" id="langToggle">
                 <span class="lang-flag">🇬🇧</span>
                 <span id="langText">English</span>
@@ -92,6 +136,20 @@
                     <i class="fas fa-plus"></i>
                     <span id="btnAddAppointment">Add Appointment</span>
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Modal (for forms) -->
+    <div class="action-modal" id="actionModal">
+        <div class="action-modal-content">
+            <button class="action-modal-close" onclick="closeActionModal()">×</button>
+            <div class="action-modal-header">
+                <i class="action-modal-icon" id="actionModalIcon"></i>
+                <h3 class="action-modal-title" id="actionModalTitle"></h3>
+            </div>
+            <div class="action-modal-body" id="actionModalBody">
+                <!-- Dynamic form content will be loaded here -->
             </div>
         </div>
     </div>
