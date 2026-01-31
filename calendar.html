@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Khmer Lunar Calendar 2026</title>
+    <title>Appointment Calendar</title>
     
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -15,7 +15,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Custom Styles -->
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=5">
 </head>
 <body>
     <!-- Header -->
@@ -82,15 +82,6 @@
                 <span class="lang-flag">🇬🇧</span>
                 <span id="langText">English</span>
             </div>
-            <button class="nav-arrow" onclick="testBuddhistHolidays()" title="Test Buddhist Holidays">
-                <i class="fas fa-bug"></i>
-            </button>
-            <button class="nav-arrow">
-                <i class="fas fa-cog"></i>
-            </button>
-            <button class="nav-arrow">
-                <i class="fas fa-bars"></i>
-            </button>
         </div>
     </div>
 
@@ -114,43 +105,71 @@
         </div>
 
         <!-- Appointments Sidebar -->
-        <div class="holidays-sidebar">
-            <div class="sidebar-title" id="sidebarTitle">Appointments</div>
-            <div id="appointmentsList"></div>
+        <div class="appointments-sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title" id="sidebarTitle">Appointments</div>
+                <div class="sidebar-date-info" id="sidebarDateInfo"></div>
+            </div>
+            
+            <!-- Filters Section -->
+            <div class="appointment-filters">
+                <div class="filter-row">
+                    <label class="filter-checkbox">
+                        <input type="checkbox" id="filterViewAll" checked>
+                        <span class="checkmark"></span>
+                        <span class="filter-label">View All</span>
+                    </label>
+                    <select class="filter-provider" id="filterProvider">
+                        <option value="">--- select provider ---</option>
+                    </select>
+                </div>
+                <div class="filter-types">
+                    <label class="filter-checkbox type-appointment">
+                        <input type="checkbox" class="filter-type" value="appointment" checked>
+                        <span class="checkmark" style="background-color: #3b82f6;"></span>
+                        <span class="filter-label">Appointment</span>
+                    </label>
+                    <label class="filter-checkbox type-followup">
+                        <input type="checkbox" class="filter-type" value="followup" checked>
+                        <span class="checkmark" style="background-color: #f59e0b;"></span>
+                        <span class="filter-label">Follow Up</span>
+                    </label>
+                    <label class="filter-checkbox type-queue">
+                        <input type="checkbox" class="filter-type" value="queue" checked>
+                        <span class="checkmark" style="background-color: #06b6d4;"></span>
+                        <span class="filter-label">Queue</span>
+                    </label>
+                    <label class="filter-checkbox type-finished">
+                        <input type="checkbox" class="filter-type" value="finished" checked>
+                        <span class="checkmark" style="background-color: #22c55e;"></span>
+                        <span class="filter-label">Finished</span>
+                    </label>
+                    <label class="filter-checkbox type-cancelled">
+                        <input type="checkbox" class="filter-type" value="cancelled" checked>
+                        <span class="checkmark" style="background-color: #ef4444;"></span>
+                        <span class="filter-label">Cancelled</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div id="appointmentsList" class="appointments-list"></div>
         </div>
     </div>
 
-    <!-- Date Info Modal -->
-    <div class="date-modal" id="dateModal">
-        <div class="date-modal-content">
-            <button class="date-modal-close" onclick="closeDateModal()">×</button>
-            <div class="date-modal-title" id="modalTitle"></div>
-            <div class="date-modal-text" id="modalText"></div>
-            <div class="date-modal-date-en" id="modalDateEn"></div>
-            <div class="date-modal-actions">
-                <button class="date-modal-btn" onclick="copyText()">
-                    <i class="fas fa-copy"></i>
-                    <span id="btnCopyText">Copy text</span>
-                </button>
-                <button class="date-modal-btn" onclick="addAppointment()">
-                    <i class="fas fa-plus"></i>
-                    <span id="btnAddAppointment">Add Appointment</span>
-                </button>
+    <!-- Slide Panel (for all forms) -->
+    <div class="slide-panel-overlay" id="slidePanelOverlay"></div>
+    <div class="slide-panel" id="slidePanel">
+        <div class="slide-panel-header">
+            <div class="slide-panel-title-section">
+                <i class="slide-panel-icon" id="slidePanelIcon"></i>
+                <h3 class="slide-panel-title" id="slidePanelTitle"></h3>
             </div>
+            <button class="slide-panel-close" id="slidePanelClose">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
-    </div>
-
-    <!-- Action Modal (for forms) -->
-    <div class="action-modal" id="actionModal">
-        <div class="action-modal-content">
-            <button class="action-modal-close" onclick="closeActionModal()">×</button>
-            <div class="action-modal-header">
-                <i class="action-modal-icon" id="actionModalIcon"></i>
-                <h3 class="action-modal-title" id="actionModalTitle"></h3>
-            </div>
-            <div class="action-modal-body" id="actionModalBody">
-                <!-- Dynamic form content will be loaded here -->
-            </div>
+        <div class="slide-panel-body" id="slidePanelBody">
+            <!-- Dynamic form content will be loaded here -->
         </div>
     </div>
 
@@ -164,6 +183,6 @@
     <script src="https://cdn.jsdelivr.net/gh/ThyrithSor/momentkh@3.0.3/momentkh.js"></script>
     
     <!-- Custom Script -->
-    <script src="script.js"></script>
+    <script src="script.js?v=4"></script>
 </body>
 </html>

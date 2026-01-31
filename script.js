@@ -1,8 +1,186 @@
 $(document).ready(function() {
     let currentDate = new Date();
     let currentLanguage = localStorage.getItem('calendar-language') || 'en';
-    let selectedDateInfo = null;
-    let appointments = JSON.parse(localStorage.getItem('calendar-appointments')) || [];
+    let selectedDate = null; // Currently selected date for filtering
+    
+    // Load appointments and validate/migrate old data
+    let storedAppointments = JSON.parse(localStorage.getItem('calendar-appointments')) || [];
+    
+    // Filter out old format appointments that don't have dateStart
+    let appointments = storedAppointments.filter(apt => apt.dateStart);
+    
+    // If we filtered out invalid data, save the clean version
+    if (appointments.length !== storedAppointments.length) {
+        console.log('🔧 Cleaned up old appointment data');
+        localStorage.setItem('calendar-appointments', JSON.stringify(appointments));
+    }
+
+    // Mock data for patients and providers
+    const mockPatients = [
+        { id: 1, name: 'Sokha Meas', phone: '012 345 678', gender: 'male' },
+        { id: 2, name: 'Channary Ouk', phone: '077 234 567', gender: 'female' },
+        { id: 3, name: 'Visal Keo', phone: '089 456 789', gender: 'male' },
+        { id: 4, name: 'Sreymom Pich', phone: '015 678 901', gender: 'female' },
+        { id: 5, name: 'Bunthoeun Heng', phone: '096 789 012', gender: 'male' },
+        { id: 6, name: 'Socheata Ly', phone: '070 890 123', gender: 'female' },
+        { id: 7, name: 'Rithya Noun', phone: '011 901 234', gender: 'male' },
+        { id: 8, name: 'Pisey Seng', phone: '078 012 345', gender: 'female' }
+    ];
+
+    const mockProviders = [
+        { id: 1, name: 'Dr. Sopheap Chhorn', specialty: 'General Dentistry', color: '#8b5cf6' },
+        { id: 2, name: 'Dr. Veasna Prak', specialty: 'Orthodontics', color: '#ec4899' },
+        { id: 3, name: 'Dr. Kosal Mony', specialty: 'Oral Surgery', color: '#14b8a6' },
+        { id: 4, name: 'Dr. Sreyleak Tep', specialty: 'Pediatric Dentistry', color: '#f97316' }
+    ];
+
+    const treatmentCategories = [
+        { value: 'consultation', label: 'Consultation', labelKh: 'ពិគ្រោះ' },
+        { value: 'cleaning', label: 'Cleaning', labelKh: 'សម្អាត' },
+        { value: 'filling', label: 'Filling', labelKh: 'ចាក់បំពេញ' },
+        { value: 'extraction', label: 'Extraction', labelKh: 'ដកធ្មេញ' },
+        { value: 'root-canal', label: 'Root Canal', labelKh: 'ព្យាបាលរាករាក' },
+        { value: 'crown', label: 'Crown', labelKh: 'គ្រោង' },
+        { value: 'regular-checkup', label: 'Regular Checkup', labelKh: 'ពិនិត្យទៀងទាត់' },
+        { value: 'other', label: 'Other', labelKh: 'ផ្សេងទៀត' }
+    ];
+
+    const appointmentTypes = [
+        { value: 'queue', label: 'Queue', labelKh: 'ជួរ', color: '#06b6d4' },
+        { value: 'appointment', label: 'Appointment', labelKh: 'ការណាត់ជួប', color: '#3b82f6' },
+        { value: 'followup', label: 'Follow Up', labelKh: 'តាមដាន', color: '#f59e0b' },
+        { value: 'finished', label: 'Finished', labelKh: 'រួចរាល់', color: '#22c55e' },
+        { value: 'cancelled', label: 'Cancelled', labelKh: 'បោះបង់', color: '#ef4444' }
+    ];
+
+    const rooms = [
+        { id: 1, name: 'Room 1' },
+        { id: 2, name: 'Room 2' },
+        { id: 3, name: 'Room 3' },
+        { id: 4, name: 'Room 4' },
+        { id: 5, name: 'Room 5' }
+    ];
+
+    // Initialize with sample appointments if empty
+    if (appointments.length === 0) {
+        appointments = [
+            // Multiple appointments on Jan 31 (today)
+            {
+                id: 1,
+                patientId: 1,
+                patientName: 'Sokha Meas',
+                providerId: 1,
+                providerName: 'Dr. Sopheap Chhorn',
+                treatmentCategory: 'consultation',
+                roomNumber: 1,
+                title: 'Initial Consultation',
+                dateStart: '2026-01-31 08:00',
+                dateEnd: '2026-01-31 08:30',
+                type: 'finished',
+                notes: 'New patient registration'
+            },
+            {
+                id: 2,
+                patientId: 2,
+                patientName: 'Channary Ouk',
+                providerId: 2,
+                providerName: 'Dr. Veasna Prak',
+                treatmentCategory: 'cleaning',
+                roomNumber: 2,
+                title: 'Teeth Cleaning',
+                dateStart: '2026-01-31 09:00',
+                dateEnd: '2026-01-31 09:45',
+                type: 'queue',
+                notes: 'Regular cleaning'
+            },
+            {
+                id: 3,
+                patientId: 3,
+                patientName: 'Visal Keo',
+                providerId: 1,
+                providerName: 'Dr. Sopheap Chhorn',
+                treatmentCategory: 'filling',
+                roomNumber: 1,
+                title: 'Cavity Filling',
+                dateStart: '2026-01-31 10:00',
+                dateEnd: '2026-01-31 11:00',
+                type: 'appointment',
+                notes: '2 cavities on upper molars'
+            },
+            {
+                id: 4,
+                patientId: 4,
+                patientName: 'Sreymom Pich',
+                providerId: 3,
+                providerName: 'Dr. Kosal Mony',
+                treatmentCategory: 'extraction',
+                roomNumber: 3,
+                title: 'Wisdom Tooth Extraction',
+                dateStart: '2026-01-31 11:30',
+                dateEnd: '2026-01-31 12:30',
+                type: 'appointment',
+                notes: 'Lower right wisdom tooth'
+            },
+            {
+                id: 5,
+                patientId: 5,
+                patientName: 'Bunthoeun Heng',
+                providerId: 2,
+                providerName: 'Dr. Veasna Prak',
+                treatmentCategory: 'regular-checkup',
+                roomNumber: 2,
+                title: 'Regular Checkup',
+                dateStart: '2026-01-31 14:00',
+                dateEnd: '2026-01-31 14:30',
+                type: 'followup',
+                notes: 'Follow up from last month'
+            },
+            // More appointments on different days
+            {
+                id: 6,
+                patientId: 6,
+                patientName: 'Socheata Ly',
+                providerId: 4,
+                providerName: 'Dr. Sreyleak Tep',
+                treatmentCategory: 'consultation',
+                roomNumber: 4,
+                title: 'Child Dental Checkup',
+                dateStart: '2026-01-15 09:00',
+                dateEnd: '2026-01-15 09:30',
+                type: 'finished',
+                notes: 'Pediatric patient - age 8'
+            },
+            {
+                id: 7,
+                patientId: 7,
+                patientName: 'Rithya Noun',
+                providerId: 1,
+                providerName: 'Dr. Sopheap Chhorn',
+                treatmentCategory: 'root-canal',
+                roomNumber: 1,
+                title: 'Root Canal Treatment',
+                dateStart: '2026-01-20 10:00',
+                dateEnd: '2026-01-20 11:30',
+                type: 'cancelled',
+                notes: 'Patient rescheduled'
+            },
+            {
+                id: 8,
+                patientId: 8,
+                patientName: 'Pisey Seng',
+                providerId: 3,
+                providerName: 'Dr. Kosal Mony',
+                treatmentCategory: 'crown',
+                roomNumber: 3,
+                title: 'Crown Fitting',
+                dateStart: '2026-02-05 11:00',
+                dateEnd: '2026-02-05 12:00',
+                type: 'appointment',
+                notes: 'Final crown fitting'
+            }
+        ];
+        localStorage.setItem('calendar-appointments', JSON.stringify(appointments));
+    }
 
     // Dynamic holidays cache
     let holidaysCache = {};
@@ -12,7 +190,6 @@ $(document).ready(function() {
     function getFixedHolidays(year) {
         const holidays = {};
         
-        // MomentKH doesn't provide getHolidays function, so use local data
         const fixedHolidayData = {
             '01-01': { en: 'New Year\'s Day', kh: 'ថ្ងៃចូលឆ្នាំសាកល', isRestDay: true },
             '01-07': { en: 'Victory Over Genocide Day', kh: 'ទិវាជ័យជម្នះលើរបបប្រល័យពូជសាសន៍', isRestDay: true },
@@ -29,7 +206,6 @@ $(document).ready(function() {
             '11-09': { en: 'Independence Day', kh: 'ទិវាឯករាជ្យជាតិ', isRestDay: true },
         };
 
-        // Convert to full date format with year
         Object.keys(fixedHolidayData).forEach(monthDay => {
             const fullDate = `${year}-${monthDay}`;
             holidays[fullDate] = fixedHolidayData[monthDay];
@@ -46,22 +222,18 @@ $(document).ready(function() {
 
         const events = {};
         
-        console.log(`🔥 Calculating Buddhist holidays for ${year}...`);
-        
         try {
-            // Check if MomentKH is properly loaded
             if (typeof momentkh === 'undefined') {
                 console.error('MomentKH library not loaded!');
                 return events;
             }
             
-            // 1. Khmer New Year - use getNewYear function
+            // Khmer New Year
             try {
                 const khmerNewYear = momentkh.getNewYear(year);
                 if (khmerNewYear && khmerNewYear.year && khmerNewYear.month && khmerNewYear.day) {
                     const newYearDate = new Date(khmerNewYear.year, khmerNewYear.month - 1, khmerNewYear.day);
                     
-                    // Add 3 days for Khmer New Year
                     for (let i = 0; i < 3; i++) {
                         const date = new Date(newYearDate);
                         date.setDate(date.getDate() + i);
@@ -78,108 +250,43 @@ $(document).ready(function() {
                             isRestDay: true
                         };
                     }
-                    console.log(`✅ Khmer New Year calculated: ${formatDateKey(newYearDate)}`);
                 }
             } catch (e) {
                 console.error('Error calculating Khmer New Year:', e);
             }
 
-            // 2. Calculate Buddhist holidays - try multiple BE years since lunar calendar can span Gregorian years
-            const potentialBEYears = [year + 543, year + 544, year + 545]; // Try different BE year calculations
+            const potentialBEYears = [year + 543, year + 544, year + 545];
             
-            // Define Buddhist holidays with proper data structure
             const buddhistHolidays = [
-                { 
-                    name: 'Meak Bochea', 
-                    nameKh: 'ពិធីបុណ្យមាឃបូជា',
-                    day: 15, 
-                    moonPhase: 0, // 0 = Koeut (waxing)
-                    monthIndex: 2, // 3rd month (Meak)
-                    isRestDay: true 
-                },
-                { 
-                    name: 'Visakha Bochea', 
-                    nameKh: 'ពិធីបុណ្យវិសាខបូជា',
-                    day: 15, 
-                    moonPhase: 0, // 0 = Koeut (waxing)
-                    monthIndex: 5, // 6th month (Visak)
-                    isRestDay: true 
-                },
-                { 
-                    name: 'Asalha Bochea', 
-                    nameKh: 'ពិធីបុណ្យអាសាឡ្ហបូជា',
-                    day: 15, 
-                    moonPhase: 0, // 0 = Koeut (waxing)
-                    monthIndex: 7, // 8th month (Asath)
-                    isRestDay: true 
-                },
-                { 
-                    name: 'Royal Ploughing Ceremony', 
-                    nameKh: 'ព្រះរាជពិធីច្រត់ព្រះនង្គ័ល',
-                    day: 4, 
-                    moonPhase: 0, // 0 = Koeut (waxing)
-                    monthIndex: 6, // 7th month (usually in May)
-                    isRestDay: true 
-                }
+                { name: 'Meak Bochea', nameKh: 'ពិធីបុណ្យមាឃបូជា', day: 15, moonPhase: 0, monthIndex: 2, isRestDay: true },
+                { name: 'Visakha Bochea', nameKh: 'ពិធីបុណ្យវិសាខបូជា', day: 15, moonPhase: 0, monthIndex: 5, isRestDay: true },
+                { name: 'Asalha Bochea', nameKh: 'ពិធីបុណ្យអាសាឡ្ហបូជា', day: 15, moonPhase: 0, monthIndex: 7, isRestDay: true },
+                { name: 'Royal Ploughing Ceremony', nameKh: 'ព្រះរាជពិធីច្រត់ព្រះនង្គ័ល', day: 4, moonPhase: 0, monthIndex: 6, isRestDay: true }
             ];
             
-            // Calculate each Buddhist holiday
             buddhistHolidays.forEach(holiday => {
-                let found = false;
-                
                 for (const beYear of potentialBEYears) {
                     try {
                         const khmerDate = momentkh.fromKhmer(beYear, holiday.monthIndex, holiday.day, holiday.moonPhase);
                         
-                        if (khmerDate && khmerDate.gregorian) {
-                            const gYear = khmerDate.gregorian.year;
-                            const gMonth = khmerDate.gregorian.month;
-                            const gDay = khmerDate.gregorian.day;
+                        if (khmerDate && khmerDate.gregorian && khmerDate.gregorian.year === year) {
+                            const date = new Date(khmerDate.gregorian.year, khmerDate.gregorian.month - 1, khmerDate.gregorian.day);
+                            const dateKey = formatDateKey(date);
                             
-                            // Only add if it falls in the target Gregorian year
-                            if (gYear === year) {
-                                const date = new Date(gYear, gMonth - 1, gDay);
-                                const dateKey = formatDateKey(date);
-                                
-                                events[dateKey] = {
-                                    en: holiday.name,
-                                    kh: holiday.nameKh,
-                                    isRestDay: holiday.isRestDay
-                                };
-                                
-                                console.log(`✅ ${holiday.name} calculated: ${dateKey}`);
-                                found = true;
-                                break;
-                            }
+                            events[dateKey] = {
+                                en: holiday.name,
+                                kh: holiday.nameKh,
+                                isRestDay: holiday.isRestDay
+                            };
+                            break;
                         }
-                    } catch (e) {
-                        // Continue trying other BE years
-                    }
-                }
-                
-                if (!found) {
-                    console.warn(`⚠️ Could not calculate ${holiday.name} for year ${year}`);
+                    } catch (e) {}
                 }
             });
 
-            // 3. Multi-day festivals
             const multidayFestivals = [
-                {
-                    name: 'Pchum Ben',
-                    nameKh: 'ពិធីបុណ្យភ្ជុំបិណ្ឌ',
-                    days: [13, 14, 15],
-                    moonPhase: 0, // Koeut
-                    monthIndex: 10, // 10th month (Pheakta Bot)
-                    isRestDay: true
-                },
-                {
-                    name: 'Water Festival',
-                    nameKh: 'ពិធីបុណ្យអុំទូក',
-                    days: [13, 14, 15],
-                    moonPhase: 0, // Koeut
-                    monthIndex: 11, // 12th month (Kadeuk)
-                    isRestDay: true
-                }
+                { name: 'Pchum Ben', nameKh: 'ពិធីបុណ្យភ្ជុំបិណ្ឌ', days: [13, 14, 15], moonPhase: 0, monthIndex: 10, isRestDay: true },
+                { name: 'Water Festival', nameKh: 'ពិធីបុណ្យអុំទូក', days: [13, 14, 15], moonPhase: 0, monthIndex: 11, isRestDay: true }
             ];
             
             multidayFestivals.forEach(festival => {
@@ -199,62 +306,36 @@ $(document).ready(function() {
                                     isRestDay: festival.isRestDay
                                 };
                             });
-                            
-                            console.log(`✅ ${festival.name} calculated`);
                             break;
                         }
-                    } catch (e) {
-                        // Continue trying
-                    }
+                    } catch (e) {}
                 }
             });
 
-            const eventCount = Object.keys(events).length;
-            console.log(`🎯 Total Buddhist holidays calculated for ${year}:`, eventCount, 'events');
-            
-            if (eventCount === 0) {
-                console.warn(`⚠️ No Buddhist events found for ${year}. Check MomentKH library.`);
-            }
-
         } catch (e) {
-            console.error('❌ Critical error calculating Buddhist holidays for year', year, ':', e);
+            console.error('Critical error calculating Buddhist holidays:', e);
         }
 
         buddhistEventsCache[year] = events;
         return events;
     }
 
-    // Get all holidays for a given year (fixed + dynamic)
     function getHolidays(year) {
         if (holidaysCache[year]) {
             return holidaysCache[year];
         }
 
         const holidays = {};
-        
-        // Get fixed holidays (from local data)
         const fixedHolidays = getFixedHolidays(year);
         Object.assign(holidays, fixedHolidays);
-        console.log(`📋 Fixed holidays for ${year}:`, Object.keys(fixedHolidays).length);
         
-        // Add dynamic Buddhist holidays
         const buddhistEvents = calculateBuddhistHolidays(year);
-        console.log(`🏮 Buddhist events for ${year}:`, Object.keys(buddhistEvents).length, buddhistEvents);
-        
         Object.keys(buddhistEvents).forEach(dateKey => {
             holidays[dateKey] = buddhistEvents[dateKey];
         });
         
-        console.log(`🎯 Total holidays for ${year}:`, Object.keys(holidays).length, 'events');
-        console.log(`🔍 Sample holiday dates:`, Object.keys(holidays).slice(0, 5));
-        
         holidaysCache[year] = holidays;
         return holidays;
-    }
-
-    // Get Buddhist events for a given year
-    function getBuddhistEvents(year) {
-        return calculateBuddhistHolidays(year);
     }
 
     // Translations
@@ -281,14 +362,13 @@ $(document).ready(function() {
         }
     };
 
-    // Khmer Number Converter - DISABLED, always use Arabic numerals
-    function toKhmerNumber(num) {
-        return num; // Always return Arabic numerals
-    }
-
     // Get Buddhist Date Info
     function getBuddhistDateInfo(date) {
         try {
+            if (typeof momentkh === 'undefined') {
+                return null;
+            }
+            
             const year = date.getFullYear();
             const month = date.getMonth() + 1;
             const day = date.getDate();
@@ -332,7 +412,6 @@ $(document).ready(function() {
                 fullKhmerDate: khmerDate
             };
         } catch (e) {
-            console.error('MomentKH error:', e);
             return null;
         }
     }
@@ -346,7 +425,7 @@ $(document).ready(function() {
             const firstMonth = firstDay.khmer.monthName;
             const lastMonth = lastDay.khmer.monthName;
             const animalYear = firstDay.khmer.animalYearName;
-            const beYear = firstDay.khmer.beYear; // Always Arabic numerals
+            const beYear = firstDay.khmer.beYear;
             
             if (firstMonth === lastMonth) {
                 return `${firstMonth} ${animalYear} ${beYear}`;
@@ -366,99 +445,31 @@ $(document).ready(function() {
         return `${year}-${month}-${day}`;
     }
 
-    // Show date modal
-    window.showDateModal = function(date) {
-        const buddhistInfo = getBuddhistDateInfo(date);
-        if (!buddhistInfo) return;
-
-        selectedDateInfo = {
-            date: date,
-            buddhistInfo: buddhistInfo
-        };
-
-        // Add Buddha background if holy day
-        if (buddhistInfo.isBuddhistHolyDay) {
-            $('.date-modal-content').addClass('has-buddha-bg');
-        } else {
-            $('.date-modal-content').removeClass('has-buddha-bg');
-        }
-
-        const today = new Date();
-        const isToday = date.toDateString() === today.toDateString();
-
-        const dayOfWeek = translations[currentLanguage].daysFull[date.getDay()];
-        const gregorianDay = date.getDate(); // Always Arabic numerals
-        const gregorianMonth = translations[currentLanguage].months[date.getMonth()];
-        const gregorianYear = date.getFullYear(); // Always Arabic numerals
+    // Handle date click - show appointments for that date (toggle selection)
+    function handleDateClick(date) {
+        const dateKey = formatDateKey(date);
         
-        // Title
-        if (currentLanguage === 'kh') {
-            if (isToday) {
-                $('#modalTitle').text(`ថ្ងៃនេះ - ${dayOfWeek}`);
-            } else {
-                $('#modalTitle').text(dayOfWeek);
-            }
+        // If clicking the same date, deselect it
+        if (selectedDate && formatDateKey(selectedDate) === dateKey) {
+            selectedDate = null;
+            $('.day-cell').removeClass('selected');
         } else {
-            if (isToday) {
-                $('#modalTitle').text(`Today - ${dayOfWeek}`);
-            } else {
-                $('#modalTitle').text(dayOfWeek);
-            }
+            selectedDate = date;
+            // Update selected state in calendar
+            $('.day-cell').removeClass('selected');
+            $(`.day-cell[data-date="${dateKey}"]`).addClass('selected');
         }
         
-        // Modal text
-        if (currentLanguage === 'kh') {
-            // Khmer: Buddhist date first, then "ត្រូវនឹង", then Gregorian
-            const khmerFullDate = momentkh.format(buddhistInfo.fullKhmerDate, "ថ្ងៃW dN ខែm ឆ្នាំa ព.ស.b");
-            const gregorianPart = `ត្រូវនឹង ថ្ងៃទី${gregorianDay} ${gregorianMonth} ${gregorianYear}`;
-            let modalText = `${khmerFullDate} ${gregorianPart}`;
-            
-            // Add all events for this day with colors
-            const dateKey = formatDateKey(date);
-            const holidays = getHolidays(date.getFullYear());
-            const holiday = holidays[dateKey];
-            
-            if (holiday) {
-                const holidayName = holiday.kh || holiday.en;
-                modalText += `\n\n<span style="color: #ff0000; font-weight: 600;">🎉 ${holidayName}</span>`;
-            }
-            
-            $('#modalText').html(modalText.replace(/\n/g, '<br>'));
-            $('#modalDateEn').text(`${translations.en.months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`);
-        } else {
-            // English: Gregorian first, then "which in Lunar is..."
-            const moonPhaseText = buddhistInfo.moonPhase === 0 ? 'Koeut' : 'Roach';
-            let text = `${dayOfWeek}, ${gregorianMonth} ${gregorianDay}, ${gregorianYear} which in Lunar is day of ${buddhistInfo.lunarDay} ${moonPhaseText}, month of ${buddhistInfo.monthName}, year of ${buddhistInfo.animalYearName}, ${buddhistInfo.sakName} era, Buddhist era ${buddhistInfo.beYear}`;
-            
-            // Add all events for this day with colors
-            const dateKey = formatDateKey(date);
-            const holidays = getHolidays(date.getFullYear());
-            const holiday = holidays[dateKey];
-            
-            if (holiday) {
-                const holidayName = holiday.en || holiday.kh;
-                text += `\n\n<span style="color: #ff0000; font-weight: 600;">🎉 ${holidayName}</span>`;
-            }
-            
-            $('#modalText').html(text.replace(/\n/g, '<br>'));
-            $('#modalDateEn').text('');
-        }
-        
-        $('#dateModal').addClass('show');
-    };
+        // Update sidebar
+        renderAppointments();
+    }
 
-    window.closeDateModal = function() {
-        $('#dateModal').removeClass('show');
-        selectedDateInfo = null;
-    };
-
-    window.copyText = function() {
-        if (!selectedDateInfo) return;
-        const text = $('#modalText').text() + '\n' + $('#modalDateEn').text();
-        navigator.clipboard.writeText(text).then(() => {
-            alert(currentLanguage === 'en' ? 'Copied to clipboard!' : 'ចម្លងទៅក្ដារតម្បៀតខ្ទាស់!');
-        });
-    };
+    // Clear date selection - show all month appointments
+    function clearDateSelection() {
+        selectedDate = null;
+        $('.day-cell').removeClass('selected');
+        renderAppointments();
+    }
 
     // Render Calendar
     function renderCalendar() {
@@ -490,7 +501,6 @@ $(document).ready(function() {
         for (let week = 0; week < 6; week++) {
             calendarHtml += `<div class="calendar-row">`;
             
-            // Day cells
             for (let day = 0; day < 7; day++) {
                 const currentDayCount = dayCount;
                 const cellDate = new Date(year, month, currentDayCount);
@@ -504,7 +514,8 @@ $(document).ready(function() {
         
         $('#calendarBody').html(calendarHtml);
         
-        // Render appointments sidebar
+        // Clear selection and render appointments for the month
+        selectedDate = null;
         renderAppointments();
     }
 
@@ -517,73 +528,174 @@ $(document).ready(function() {
         const holiday = holidays[dateKey];
         const buddhistInfo = getBuddhistDateInfo(date);
         
+        // Count appointments for this date (safely check for dateStart property)
+        const dayAppointments = appointments.filter(apt => apt.dateStart && apt.dateStart.startsWith(dateKey));
+        const appointmentCount = dayAppointments.length;
+        
         let classes = 'day-cell';
         if (isOtherMonth) classes += ' other-month';
         if (isToday) classes += ' today';
         if (dayOfWeek === 0 || dayOfWeek === 6) classes += ' weekend';
         if (holiday && holiday.isRestDay) classes += ' holiday';
         
-        let html = `<div class="${classes}" onclick="showDateModal(new Date('${date.toISOString()}'))">`;
+        let html = `<div class="${classes}" data-date="${dateKey}" onclick="handleDateClick('${dateKey}')">`;
         
-        // Day header with number and Buddhist icon
+        // Day header
         html += `<div class="day-header-row">`;
-        html += `<div class="day-number">${day}</div>`; // Always Arabic numerals
+        html += `<div class="day-number">${day}</div>`;
         if (buddhistInfo && buddhistInfo.isBuddhistHolyDay) {
-            html += `<img src="buddha-icon.png" class="buddhist-icon" alt="Buddhist Holy Day" />`;
+            html += `<img src="buddha-icon.png" class="buddhist-icon" alt="Buddhist Holy Day" onerror="this.style.display='none'" />`;
         }
         html += `</div>`;
         
         // Lunar date
         if (buddhistInfo) {
             html += `<div class="lunar-date">${buddhistInfo.lunarDateStr}</div>`;
-            
-            // Special Buddhist days
-            if (buddhistInfo.isFullMoon) {
-                html += `<div class="day-info special-day">${translations[currentLanguage].fullMoon}</div>`;
-            } else if (buddhistInfo.isShaveDay) {
-                html += `<div class="day-info special-day">${translations[currentLanguage].shaveDay}</div>`;
-            }
         }
         
-        // Holiday/Event text (show for all dates, not just current month)
+        // Holiday text
         if (holiday) {
             const holidayName = currentLanguage === 'en' ? holiday.en : holiday.kh;
-            if (holiday.isRestDay) {
-                html += `<div class="day-info holiday-text">${holidayName}</div>`;
-            } else {
-                html += `<div class="day-info event-text">${holidayName}</div>`;
-            }
-        } else {
-            // Check appointments
-            const dayAppointments = appointments.filter(apt => apt.date === dateKey);
-            if (dayAppointments.length > 0) {
-                html += `<div class="day-info event-text">${dayAppointments.length} ${currentLanguage === 'en' ? 'appointment' : 'ការណាត់'}</div>`;
-            }
+            html += `<div class="day-info holiday-text">${holidayName}</div>`;
+        }
+        
+        // Appointment count
+        if (appointmentCount > 0) {
+            html += `<div class="day-info"><span class="appointment-count">${appointmentCount}</span></div>`;
         }
         
         html += `</div>`;
         return html;
     }
 
-    function renderAppointments() {
-        const sortedAppointments = [...appointments].sort((a, b) => {
-            return new Date(a.date) - new Date(b.date);
+    // Handle date click globally
+    window.handleDateClick = function(dateKey) {
+        const parts = dateKey.split('-');
+        const date = new Date(parts[0], parts[1] - 1, parts[2]);
+        handleDateClick(date);
+    };
+
+    // Get filtered appointments
+    function getFilteredAppointments() {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        
+        // Get active filters
+        const viewAll = $('#filterViewAll').is(':checked');
+        const selectedProvider = $('#filterProvider').val();
+        const activeTypes = [];
+        $('.filter-type:checked').each(function() {
+            activeTypes.push($(this).val());
         });
         
-        let html = '';
-        if (sortedAppointments.length === 0) {
-            html = `<div class="no-appointments">${currentLanguage === 'en' ? 'No appointments scheduled' : 'មិនមានការណាត់ជួប'}</div>`;
+        let filtered = appointments.filter(apt => {
+            // Skip appointments without valid dateStart
+            if (!apt.dateStart) return false;
+            
+            const aptDate = new Date(apt.dateStart);
+            
+            // Filter by date
+            if (selectedDate) {
+                const selectedDateKey = formatDateKey(selectedDate);
+                if (!apt.dateStart.startsWith(selectedDateKey)) return false;
+            } else {
+                // Filter by month
+                if (aptDate.getFullYear() !== year || aptDate.getMonth() !== month) return false;
+            }
+            
+            // Filter by type
+            if (!viewAll && !activeTypes.includes(apt.type)) return false;
+            
+            // Filter by provider
+            if (selectedProvider && apt.providerId != selectedProvider) return false;
+            
+            return true;
+        });
+        
+        // Sort by date
+        filtered.sort((a, b) => new Date(a.dateStart) - new Date(b.dateStart));
+        
+        return filtered;
+    }
+
+    // Render Appointments
+    function renderAppointments() {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        
+        // Update sidebar title and date info
+        updateSidebarTitle();
+        
+        if (selectedDate) {
+            const dayName = translations[currentLanguage].daysFull[selectedDate.getDay()];
+            const dayNum = selectedDate.getDate();
+            const monthName = translations[currentLanguage].months[selectedDate.getMonth()];
+            $('#sidebarDateInfo').text(`${dayName}, ${dayNum} ${monthName} ${selectedDate.getFullYear()}`);
         } else {
-            sortedAppointments.forEach((apt, index) => {
-                const date = new Date(apt.date);
-                const dayName = translations[currentLanguage].daysShort[date.getDay()];
-                html += `
-                    <div class="appointment-item" onclick="editAppointment(${index})">
-                        <div class="appointment-date">${dayName}, ${date.getDate()} ${translations[currentLanguage].months[date.getMonth()]}</div>
-                        <div class="appointment-title">${apt.title}</div>
-                        ${apt.time ? `<div class="appointment-time">${apt.time}</div>` : ''}
-                    </div>
-                `;
+            const monthName = translations[currentLanguage].months[month];
+            $('#sidebarDateInfo').text(`${monthName} ${year}`);
+        }
+        
+        // Get filtered appointments
+        const filteredAppointments = getFilteredAppointments();
+        
+        let html = '';
+        if (filteredAppointments.length === 0) {
+            html = `<div class="no-appointments">${currentLanguage === 'en' ? 'No appointments found' : 'រកមិនឃើញការណាត់ជួប'}</div>`;
+        } else {
+            // Group by provider (doctor)
+            const grouped = {};
+            filteredAppointments.forEach(apt => {
+                const providerId = apt.providerId || 0;
+                if (!grouped[providerId]) grouped[providerId] = [];
+                grouped[providerId].push(apt);
+            });
+            
+            // Sort appointments within each provider by date/time
+            Object.keys(grouped).forEach(providerId => {
+                grouped[providerId].sort((a, b) => {
+                    return a.dateStart.localeCompare(b.dateStart);
+                });
+            });
+            
+            // Render grouped appointments by provider
+            Object.keys(grouped).forEach(providerId => {
+                const provider = mockProviders.find(p => p.id == providerId);
+                const providerName = provider ? provider.name : 'Unknown Provider';
+                const appointments = grouped[providerId];
+                
+                html += `<div class="appointment-date-group">`;
+                html += `<div class="provider-group-header provider-${providerId}">
+                    <i class="fas fa-user-md"></i>
+                    <span>${providerName}</span>
+                    <span class="provider-count-badge">${appointments.length}</span>
+                </div>`;
+                
+                appointments.forEach(apt => {
+                    const timeStart = apt.dateStart.split(' ')[1] || '';
+                    const timeEnd = apt.dateEnd.split(' ')[1] || '';
+                    const dateStr = apt.dateStart.split(' ')[0];
+                    const aptDate = new Date(dateStr);
+                    const dayName = translations[currentLanguage].daysShort[aptDate.getDay()];
+                    const dayNum = aptDate.getDate();
+                    const monthName = translations[currentLanguage].months[aptDate.getMonth()];
+                    
+                    html += `
+                        <div class="appointment-item provider-${apt.providerId} ${apt.type === 'cancelled' ? 'type-cancelled' : ''}" onclick="editAppointment(${apt.id})">
+                            <div class="appointment-patient">${apt.patientName}</div>
+                            <div class="appointment-details">
+                                <span><i class="fas fa-calendar"></i> ${dayName}, ${dayNum} ${monthName}</span>
+                                <span><i class="fas fa-clock"></i> ${timeStart} - ${timeEnd}</span>
+                                <span><i class="fas fa-door-open"></i> Room ${apt.roomNumber}</span>
+                            </div>
+                            <div style="margin-top: 0.5rem;">
+                                <span class="appointment-type-badge ${apt.type}">${apt.type}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `</div>`;
             });
         }
         
@@ -594,301 +706,83 @@ $(document).ready(function() {
         $('#sidebarTitle').text(currentLanguage === 'en' ? 'Appointments' : 'ការណាត់ជួប');
     }
 
-    window.editAppointment = function(index) {
-        // TODO: Open edit modal
-        alert('Edit appointment: ' + appointments[index].title);
-    };
-
-    // Update button labels when language changes
-    function updateButtonLabels() {
-        if (currentLanguage === 'kh') {
-            $('#btnCopyText').text('ចម្លង');
-            $('#btnAddAppointment').text('បន្ថែមការណាត់ជួប');
-        } else {
-            $('#btnCopyText').text('Copy text');
-            $('#btnAddAppointment').text('Add Appointment');
-        }
+    // Populate provider filter
+    function populateProviderFilter() {
+        let options = `<option value="">--- ${currentLanguage === 'en' ? 'select provider' : 'ជ្រើសរើសអ្នកផ្តល់សេវា'} ---</option>`;
+        mockProviders.forEach(p => {
+            options += `<option value="${p.id}">${p.name}</option>`;
+        });
+        $('#filterProvider').html(options);
     }
 
-    window.addAppointment = function() {
-        if (!selectedDateInfo) return;
-        const date = selectedDateInfo.date;
-        const dateStr = formatDateKey(date);
-        
-        // TODO: Open add appointment modal
-        const title = prompt(currentLanguage === 'en' ? 'Appointment title:' : 'ចំណងជើងការណាត់ជួប:');
-        if (!title) return;
-        
-        const time = prompt(currentLanguage === 'en' ? 'Time (optional):' : 'ម៉ោង (ស្រេចចិត្ត):');
-        
-        appointments.push({
-            id: Date.now(),
-            date: dateStr,
-            title: title,
-            time: time || ''
-        });
-        
-        localStorage.setItem('calendar-appointments', JSON.stringify(appointments));
-        renderAppointments();
-        closeDateModal();
-        
-        alert(currentLanguage === 'en' ? 'Appointment added!' : 'បានបន្ថែមការណាត់ជួប!');
-    };
-
-    // Language Toggle
-    $('#langToggle').click(function() {
-        currentLanguage = currentLanguage === 'en' ? 'kh' : 'en';
-        localStorage.setItem('calendar-language', currentLanguage);
-        const flag = currentLanguage === 'en' ? '🇬🇧' : '🇰🇭';
-        const text = currentLanguage === 'en' ? 'English' : 'ខ្មែរ';
-        $(this).find('.lang-flag').text(flag);
-        $(this).find('#langText').text(text);
-        
-        updateButtonLabels();
-        updateSidebarTitle();
-        updateQuickActionLanguage(); // Update quick action language
-        renderCalendar();
+    // Filter change handlers
+    $('#filterViewAll').change(function() {
+        if ($(this).is(':checked')) {
+            $('.filter-type').prop('checked', true);
+        }
         renderAppointments();
     });
 
-    // Navigation
-    $('.btn-prev-month').click(function() {
-        currentDate.setMonth(currentDate.getMonth() - 1);
-        renderCalendar();
+    $('.filter-type').change(function() {
+        const allChecked = $('.filter-type:checked').length === $('.filter-type').length;
+        $('#filterViewAll').prop('checked', allChecked);
+        renderAppointments();
     });
 
-    $('.btn-next-month').click(function() {
-        currentDate.setMonth(currentDate.getMonth() + 1);
-        renderCalendar();
+    $('#filterProvider').change(function() {
+        renderAppointments();
     });
 
-    $('.btn-refresh').click(function() {
-        currentDate = new Date();
-        renderCalendar();
-    });
-
-    // Close modal on background click
-    $('#dateModal').click(function(e) {
-        if (e.target === this) {
-            closeDateModal();
-        }
-    });
-
-    // Debug function to test Buddhist holidays
-    window.testBuddhistHolidays = function() {
-        console.log('🔍 MANUAL TEST: Clearing caches and testing Buddhist holidays...');
-        holidaysCache = {};
-        buddhistEventsCache = {};
+    // Edit appointment
+    window.editAppointment = function(id) {
+        const apt = appointments.find(a => a.id === id);
+        if (!apt) return;
         
-        const holidays2026 = getHolidays(2026);
-        console.log('🔍 2026 holidays after cache clear:', holidays2026);
-        console.log('🔍 Keys containing 2026-02:', Object.keys(holidays2026).filter(k => k.includes('2026-02')));
-        console.log('🔍 Keys containing 2026-05:', Object.keys(holidays2026).filter(k => k.includes('2026-05')));
-        
-        // Navigate directly to February 2026 to test Meak Bochea
-        currentDate = new Date(2026, 1, 1); // February 1, 2026
-        renderCalendar();
-        
-        console.log('🔍 Navigated to February 2026. Look for Meak Bochea on Feb 2nd!');
-    };
-    
-    // Quick navigation function
-    window.goToFebruary2026 = function() {
-        currentDate = new Date(2026, 1, 1); // February 1, 2026
-        renderCalendar();
-    };
-    
-    window.goToMay2026 = function() {
-        currentDate = new Date(2026, 4, 1); // May 1, 2026  
-        renderCalendar();
+        openSlidePanel('edit-appointment', apt);
     };
 
     // ====================
-    // QUICK ACTION DROPDOWN
+    // SLIDE PANEL
     // ====================
-    
-    // User permissions (can be loaded from localStorage or API)
-    let userRole = localStorage.getItem('user-role') || 'staff'; // staff, clinical, admin
-    
-    // Quick Action Translations
-    const quickActionTranslations = {
-        en: {
-            quickAction: 'New',
-            dropdownTitle: 'Quick Actions',
-            patient: 'New Patient',
-            appointment: 'New Appointment',
-            labOrder: 'New Lab Order',
-            payment: 'New Payment',
-            employee: 'New Employee',
-            prescription: 'New Prescription',
-            services: 'New Services',
-            cancel: 'Cancel',
-            save: 'Save',
-            create: 'Create'
-        },
-        kh: {
-            quickAction: 'ថ្មី',
-            dropdownTitle: 'សកម្មភាពរហ័ស',
-            patient: 'អ្នកជំងឺថ្មី',
-            appointment: 'ការណាត់ជួបថ្មី',
-            labOrder: 'សំណើមន្ទីរពិសោធន៍',
-            payment: 'ការទូទាត់ថ្មី',
-            employee: 'បុគ្គលិកថ្មី',
-            prescription: 'វេជ្ជបញ្ជាថ្មី',
-            services: 'សេវាកម្មថ្មី',
-            cancel: 'បោះបង់',
-            save: 'រក្សាទុក',
-            create: 'បង្កើត'
+
+    function openSlidePanel(type, data = null) {
+        const panel = $('#slidePanel');
+        const overlay = $('#slidePanelOverlay');
+        const icon = $('#slidePanelIcon');
+        const title = $('#slidePanelTitle');
+        const body = $('#slidePanelBody');
+        
+        const config = getPanelConfig(type, data);
+        if (!config) return;
+        
+        icon.attr('class', 'slide-panel-icon ' + config.icon);
+        title.text(config.title);
+        body.html(config.form);
+        
+        panel.addClass('show');
+        overlay.addClass('show');
+        
+        // Initialize form data if editing
+        if (data && type === 'edit-appointment') {
+            populateAppointmentForm(data);
         }
-    };
-    
-    // Update Quick Action button text
-    function updateQuickActionLanguage() {
-        $('#quickActionText').text(quickActionTranslations[currentLanguage].quickAction);
-        $('#dropdownTitle').text(quickActionTranslations[currentLanguage].dropdownTitle);
         
-        // Update action labels
-        $('.action-label').each(function() {
-            const $label = $(this);
-            const enText = $label.attr('data-en');
-            const khText = $label.attr('data-kh');
-            $label.text(currentLanguage === 'en' ? enText : khText);
-        });
-    }
-    
-    // Toggle Quick Action Dropdown
-    $('#quickActionBtn').click(function(e) {
-        e.stopPropagation();
-        const $dropdown = $('#quickActionDropdown');
-        const isOpen = $dropdown.hasClass('show');
-        
-        if (isOpen) {
-            closeQuickActionDropdown();
-        } else {
-            openQuickActionDropdown();
-        }
-    });
-    
-    function openQuickActionDropdown() {
-        $('#quickActionDropdown').addClass('show');
-        $('#quickActionBtn').attr('aria-expanded', 'true');
-        
-        // Filter items based on permissions
-        filterActionsByPermission();
-        
-        // Focus first item for keyboard navigation
         setTimeout(() => {
-            $('.quick-action-item:visible:first').focus();
-        }, 100);
+            body.find('input, select, textarea').first().focus();
+        }, 300);
     }
-    
-    function closeQuickActionDropdown() {
-        $('#quickActionDropdown').removeClass('show');
-        $('#quickActionBtn').attr('aria-expanded', 'false');
+
+    function closeSlidePanel() {
+        $('#slidePanel').removeClass('show');
+        $('#slidePanelOverlay').removeClass('show');
     }
-    
-    // Close dropdown when clicking outside
-    $(document).click(function(e) {
-        if (!$(e.target).closest('.quick-action-wrapper').length) {
-            closeQuickActionDropdown();
-        }
-    });
-    
-    // Close dropdown on Escape key
-    $(document).keydown(function(e) {
-        if (e.key === 'Escape') {
-            closeQuickActionDropdown();
-            closeActionModal();
-        }
-    });
-    
-    // Filter actions based on user permissions
-    function filterActionsByPermission() {
-        $('.quick-action-item').each(function() {
-            const $item = $(this);
-            const requiredPermission = $item.attr('data-permission');
-            
-            // Permission hierarchy: admin > clinical > staff
-            const canAccess = (
-                userRole === 'admin' ||
-                (userRole === 'clinical' && requiredPermission !== 'admin') ||
-                (userRole === 'staff' && requiredPermission === 'staff')
-            );
-            
-            if (canAccess) {
-                $item.show();
-            } else {
-                $item.hide();
-            }
-        });
-    }
-    
-    // Handle Quick Action item clicks
-    $('.quick-action-item').click(function() {
-        const action = $(this).attr('data-action');
-        handleQuickAction(action);
-        closeQuickActionDropdown();
-    });
-    
-    // Keyboard navigation for dropdown
-    $('.quick-action-item').keydown(function(e) {
-        const $items = $('.quick-action-item:visible');
-        const currentIndex = $items.index(this);
-        
-        if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            const nextIndex = (currentIndex + 1) % $items.length;
-            $items.eq(nextIndex).focus();
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            const prevIndex = (currentIndex - 1 + $items.length) % $items.length;
-            $items.eq(prevIndex).focus();
-        } else if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            $(this).click();
-        }
-    });
-    
-    // Handle Quick Actions
-    function handleQuickAction(action) {
-        console.log('Quick Action:', action);
-        
-        switch(action) {
-            case 'patient':
-                openActionModal('patient');
-                break;
-            case 'appointment':
-                openActionModal('appointment');
-                break;
-            case 'lab-order':
-                openActionModal('lab-order');
-                break;
-            case 'payment':
-                openActionModal('payment');
-                break;
-            case 'employee':
-                openActionModal('employee');
-                break;
-            case 'prescription':
-                openActionModal('prescription');
-                break;
-            case 'services':
-                openActionModal('services');
-                break;
-            default:
-                alert('Action not implemented yet');
-        }
-    }
-    
-    // Open Action Modal with form
-    function openActionModal(actionType) {
-        const modal = $('#actionModal');
-        const icon = $('#actionModalIcon');
-        const title = $('#actionModalTitle');
-        const body = $('#actionModalBody');
-        
-        // Set icon and title based on action type
-        const actionConfig = {
+
+    // Close button handler
+    $('#slidePanelClose').click(closeSlidePanel);
+
+    // Panel configurations
+    function getPanelConfig(type, data = null) {
+        const configs = {
             'patient': {
                 icon: 'fas fa-user-plus',
                 title: currentLanguage === 'en' ? 'New Patient' : 'អ្នកជំងឺថ្មី',
@@ -898,6 +792,11 @@ $(document).ready(function() {
                 icon: 'fas fa-calendar-plus',
                 title: currentLanguage === 'en' ? 'New Appointment' : 'ការណាត់ជួបថ្មី',
                 form: getAppointmentForm()
+            },
+            'edit-appointment': {
+                icon: 'fas fa-edit',
+                title: currentLanguage === 'en' ? 'Edit Appointment' : 'កែប្រែការណាត់ជួប',
+                form: getAppointmentForm(data)
             },
             'lab-order': {
                 icon: 'fas fa-flask',
@@ -926,403 +825,832 @@ $(document).ready(function() {
             }
         };
         
-        const config = actionConfig[actionType];
-        if (!config) return;
-        
-        icon.attr('class', 'action-modal-icon ' + config.icon);
-        title.text(config.title);
-        body.html(config.form);
-        
-        modal.addClass('show');
-        
-        // Focus first input
-        setTimeout(() => {
-            body.find('input, select, textarea').first().focus();
-        }, 100);
+        return configs[type];
     }
-    
-    window.closeActionModal = function() {
-        $('#actionModal').removeClass('show');
-    };
-    
+
     // Form Templates
+    function getAppointmentForm(data = null) {
+        const isEdit = data !== null;
+        const dateValue = data ? data.dateStart.split(' ')[0] : new Date().toISOString().split('T')[0];
+        
+        // Patient options
+        let patientOptions = `<option value="">--- ${currentLanguage === 'en' ? 'Select Patient' : 'ជ្រើសរើសអ្នកជំងឺ'} ---</option>`;
+        mockPatients.forEach(p => {
+            const selected = data && data.patientId === p.id ? 'selected' : '';
+            patientOptions += `<option value="${p.id}" ${selected}>${p.name}</option>`;
+        });
+        
+        // Provider options
+        let providerOptions = `<option value="">--- ${currentLanguage === 'en' ? 'Select Provider' : 'ជ្រើសរើសអ្នកផ្តល់សេវា'} ---</option>`;
+        mockProviders.forEach(p => {
+            const selected = data && data.providerId === p.id ? 'selected' : '';
+            providerOptions += `<option value="${p.id}" ${selected}>${p.name}</option>`;
+        });
+        
+        // Treatment options
+        let treatmentOptions = `<option value="">--- ${currentLanguage === 'en' ? 'Select Category' : 'ជ្រើសរើសប្រភេទ'} ---</option>`;
+        treatmentCategories.forEach(t => {
+            const selected = data && data.treatmentCategory === t.value ? 'selected' : '';
+            treatmentOptions += `<option value="${t.value}" ${selected}>${currentLanguage === 'en' ? t.label : t.labelKh}</option>`;
+        });
+        
+        // Room options
+        let roomOptions = `<option value="">--- ${currentLanguage === 'en' ? 'Select Room' : 'ជ្រើសរើសបន្ទប់'} ---</option>`;
+        rooms.forEach(r => {
+            const selected = data && data.roomNumber === r.id ? 'selected' : '';
+            roomOptions += `<option value="${r.id}" ${selected}>${r.name}</option>`;
+        });
+        
+        // Type options
+        let typeOptions = '';
+        appointmentTypes.forEach(t => {
+            const selected = data && data.type === t.value ? 'selected' : '';
+            typeOptions += `<option value="${t.value}" ${selected}>${currentLanguage === 'en' ? t.label : t.labelKh}</option>`;
+        });
+        
+        return `
+            <form id="appointmentForm" onsubmit="handleAppointmentSubmit(event, ${isEdit ? data.id : 'null'})">
+                <!-- Patient Info Section -->
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i class="fas fa-user"></i>
+                        ${currentLanguage === 'en' ? 'Patient Info' : 'ព័ត៌មានអ្នកជំងឺ'}
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? "Patient's name" : 'ឈ្មោះអ្នកជំងឺ'} <span class="required">*</span></label>
+                            <select class="form-select" name="patientId" id="patientId" required>
+                                ${patientOptions}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Provider/dentist response' : 'អ្នកផ្តល់សេវា'} <span class="required">*</span></label>
+                            <select class="form-select" name="providerId" id="providerId" required>
+                                ${providerOptions}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Treatment Category' : 'ប្រភេទការព្យាបាល'}</label>
+                            <select class="form-select" name="treatmentCategory" id="treatmentCategory">
+                                ${treatmentOptions}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Room Num' : 'លេខបន្ទប់'}</label>
+                            <select class="form-select" name="roomNumber" id="roomNumber">
+                                ${roomOptions}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Appointment Info Section -->
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i class="fas fa-calendar-alt"></i>
+                        ${currentLanguage === 'en' ? 'Appointment Info' : 'ព័ត៌មានការណាត់ជួប'}
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Appointment Title' : 'ចំណងជើង'}</label>
+                            <input type="text" class="form-input" name="title" id="title" placeholder="${currentLanguage === 'en' ? 'Event Title' : 'ចំណងជើង'}" value="${data ? data.title : ''}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Date' : 'កាលបរិច្ឆេទ'}</label>
+                            <input type="date" class="form-input" name="appointmentDate" id="appointmentDate" value="${data ? data.dateStart.split(' ')[0] : (selectedDate ? formatDateKey(selectedDate) : '')}">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Start Time' : 'ម៉ោងចាប់ផ្តើម'}</label>
+                            <input type="time" class="form-input" name="startTime" id="startTime" value="${data ? data.dateStart.split(' ')[1] : '09:00'}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'End Time' : 'ម៉ោងបញ្ចប់'}</label>
+                            <input type="time" class="form-input" name="endTime" id="endTime" value="${data ? data.dateEnd.split(' ')[1] : '10:00'}">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Type' : 'ប្រភេទ'}</label>
+                            <select class="form-select" name="type" id="appointmentType">
+                                ${typeOptions}
+                            </select>
+                        </div>
+                        <div class="form-group"></div>
+                    </div>
+                    <div class="form-row single">
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Notes' : 'កំណត់ចំណាំ'}</label>
+                            <textarea class="form-textarea" name="notes" id="notes" placeholder="${currentLanguage === 'en' ? 'Additional notes' : 'កំណត់ចំណាំបន្ថែម'}">${data ? data.notes : ''}</textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeSlidePanel()">
+                        ${currentLanguage === 'en' ? 'Cancel' : 'បោះបង់'}
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        ${isEdit ? (currentLanguage === 'en' ? 'Update' : 'ធ្វើបច្ចុប្បន្នភាព') : (currentLanguage === 'en' ? 'Create' : 'បង្កើត')}
+                    </button>
+                </div>
+            </form>
+        `;
+    }
+
+    function populateAppointmentForm(data) {
+        // Form will be populated by the getAppointmentForm function with data parameter
+    }
+
     function getPatientForm() {
         return `
             <form id="patientForm" onsubmit="handlePatientSubmit(event)">
-                <div class="action-form-group">
-                    <label class="action-form-label">${currentLanguage === 'en' ? 'Full Name' : 'ឈ្មោះពេញ'}</label>
-                    <input type="text" class="action-form-input" name="fullName" required>
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i class="fas fa-user"></i>
+                        ${currentLanguage === 'en' ? 'Patient Information' : 'ព័ត៌មានអ្នកជំងឺ'}
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Full Name' : 'ឈ្មោះពេញ'} <span class="required">*</span></label>
+                            <input type="text" class="form-input" name="fullName" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Date of Birth' : 'ថ្ងៃខែឆ្នាំកំណើត'} <span class="required">*</span></label>
+                            <input type="date" class="form-input" name="dob" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Gender' : 'ភេទ'} <span class="required">*</span></label>
+                            <select class="form-select" name="gender" required>
+                                <option value="">--- ${currentLanguage === 'en' ? 'Select' : 'ជ្រើសរើស'} ---</option>
+                                <option value="male">${currentLanguage === 'en' ? 'Male' : 'ប្រុស'}</option>
+                                <option value="female">${currentLanguage === 'en' ? 'Female' : 'ស្រី'}</option>
+                                <option value="other">${currentLanguage === 'en' ? 'Other' : 'ផ្សេងទៀត'}</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Phone Number' : 'លេខទូរស័ព្ទ'} <span class="required">*</span></label>
+                            <input type="tel" class="form-input" name="phone" required>
+                        </div>
+                    </div>
+                    <div class="form-row single">
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Address' : 'អាសយដ្ឋាន'}</label>
+                            <textarea class="form-textarea" name="address"></textarea>
+                        </div>
+                    </div>
                 </div>
-                <div class="action-form-group">
-                    <label class="action-form-label">${currentLanguage === 'en' ? 'Date of Birth' : 'ថ្ងៃខែឆ្នាំកំណើត'}</label>
-                    <input type="date" class="action-form-input" name="dob" required>
+                
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i class="fas fa-notes-medical"></i>
+                        ${currentLanguage === 'en' ? 'Medical History' : 'ប្រវត្តិវេជ្ជសាស្រ្ត'}
+                    </div>
+                    <div class="form-row single">
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Allergies' : 'អាឡែរហ្ស៊ី'}</label>
+                            <input type="text" class="form-input" name="allergies" placeholder="${currentLanguage === 'en' ? 'Enter any known allergies' : 'បញ្ចូលអាឡែរហ្ស៊ី'}">
+                        </div>
+                    </div>
+                    <div class="form-row single">
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Medical Notes' : 'កំណត់ចំណាំវេជ្ជសាស្រ្ត'}</label>
+                            <textarea class="form-textarea" name="medicalNotes"></textarea>
+                        </div>
+                    </div>
                 </div>
-                <div class="action-form-group">
-                    <label class="action-form-label">${currentLanguage === 'en' ? 'Gender' : 'ភេទ'}</label>
-                    <select class="action-form-select" name="gender" required>
-                        <option value="">${currentLanguage === 'en' ? 'Select...' : 'ជ្រើសរើស...'}</option>
-                        <option value="male">${currentLanguage === 'en' ? 'Male' : 'ប្រុស'}</option>
-                        <option value="female">${currentLanguage === 'en' ? 'Female' : 'ស្រី'}</option>
-                        <option value="other">${currentLanguage === 'en' ? 'Other' : 'ផ្សេងទៀត'}</option>
-                    </select>
-                </div>
-                <div class="action-form-group">
-                    <label class="action-form-label">${currentLanguage === 'en' ? 'Phone Number' : 'លេខទូរស័ព្ទ'}</label>
-                    <input type="tel" class="action-form-input" name="phone" required>
-                </div>
-                <div class="action-form-group">
-                    <label class="action-form-label">${currentLanguage === 'en' ? 'Address' : 'អាសយដ្ឋាន'}</label>
-                    <textarea class="action-form-textarea" name="address"></textarea>
-                </div>
-                <div class="action-form-actions">
-                    <button type="button" class="action-form-btn action-form-btn-secondary" onclick="closeActionModal()">
-                        ${quickActionTranslations[currentLanguage].cancel}
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeSlidePanel()">
+                        ${currentLanguage === 'en' ? 'Cancel' : 'បោះបង់'}
                     </button>
-                    <button type="submit" class="action-form-btn action-form-btn-primary">
-                        ${quickActionTranslations[currentLanguage].create}
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        ${currentLanguage === 'en' ? 'Create Patient' : 'បង្កើតអ្នកជំងឺ'}
                     </button>
                 </div>
             </form>
         `;
     }
-    
-    function getAppointmentForm() {
-        return `
-            <form id="appointmentForm" onsubmit="handleAppointmentSubmit(event)">
-                <div class="action-form-group">
-                    <label class="action-form-label">${currentLanguage === 'en' ? 'Patient Name' : 'ឈ្មោះអ្នកជំងឺ'}</label>
-                    <input type="text" class="action-form-input" name="patientName" required>
-                </div>
-                <div class="action-form-group">
-                    <label class="action-form-label">${currentLanguage === 'en' ? 'Date' : 'កាលបរិច្ឆេទ'}</label>
-                    <input type="date" class="action-form-input" name="date" value="${new Date().toISOString().split('T')[0]}" required>
-                </div>
-                <div class="action-form-group">
-                    <label class="action-form-label">${currentLanguage === 'en' ? 'Time' : 'ម៉ោង'}</label>
-                    <input type="time" class="action-form-input" name="time" required>
-                </div>
-                <div class="action-form-group">
-                    <label class="action-form-label">${currentLanguage === 'en' ? 'Reason' : 'មូលហេតុ'}</label>
-                    <textarea class="action-form-textarea" name="reason"></textarea>
-                </div>
-                <div class="action-form-actions">
-                    <button type="button" class="action-form-btn action-form-btn-secondary" onclick="closeActionModal()">
-                        ${quickActionTranslations[currentLanguage].cancel}
-                    </button>
-                    <button type="submit" class="action-form-btn action-form-btn-primary">
-                        ${quickActionTranslations[currentLanguage].create}
-                    </button>
-                </div>
-            </form>
-        `;
-    }
-    
+
     function getLabOrderForm() {
         return `
             <form id="labOrderForm" onsubmit="handleLabOrderSubmit(event)">
-                <div class="action-form-group">
-                    <label class="action-form-label">${currentLanguage === 'en' ? 'Patient Name' : 'ឈ្មោះអ្នកជំងឺ'}</label>
-                    <input type="text" class="action-form-input" name="patientName" required>
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i class="fas fa-flask"></i>
+                        ${currentLanguage === 'en' ? 'Lab Order Details' : 'ព័ត៌មានសំណើមន្ទីរពិសោធន៍'}
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Patient Name' : 'ឈ្មោះអ្នកជំងឺ'} <span class="required">*</span></label>
+                            <select class="form-select" name="patientId" required>
+                                <option value="">--- ${currentLanguage === 'en' ? 'Select Patient' : 'ជ្រើសរើសអ្នកជំងឺ'} ---</option>
+                                ${mockPatients.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Ordering Provider' : 'អ្នកបញ្ជា'} <span class="required">*</span></label>
+                            <select class="form-select" name="providerId" required>
+                                <option value="">--- ${currentLanguage === 'en' ? 'Select Provider' : 'ជ្រើសរើសអ្នកផ្តល់សេវា'} ---</option>
+                                ${mockProviders.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Test Type' : 'ប្រភេទតេស្ត'} <span class="required">*</span></label>
+                            <select class="form-select" name="testType" required>
+                                <option value="">--- ${currentLanguage === 'en' ? 'Select' : 'ជ្រើសរើស'} ---</option>
+                                <option value="blood">Blood Test</option>
+                                <option value="urine">Urine Test</option>
+                                <option value="xray">X-Ray</option>
+                                <option value="ultrasound">Ultrasound</option>
+                                <option value="ct-scan">CT Scan</option>
+                                <option value="mri">MRI</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Priority' : 'អាទិភាព'} <span class="required">*</span></label>
+                            <select class="form-select" name="priority" required>
+                                <option value="routine">${currentLanguage === 'en' ? 'Routine' : 'ធម្មតា'}</option>
+                                <option value="urgent">${currentLanguage === 'en' ? 'Urgent' : 'បន្ទាន់'}</option>
+                                <option value="stat">STAT</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row single">
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Clinical Notes' : 'កំណត់ចំណាំគ្លីនិក'}</label>
+                            <textarea class="form-textarea" name="notes"></textarea>
+                        </div>
+                    </div>
                 </div>
-                <div class="action-form-group">
-                    <label class="action-form-label">${currentLanguage === 'en' ? 'Test Type' : 'ប្រភេទតេស្ត'}</label>
-                    <select class="action-form-select" name="testType" required>
-                        <option value="">${currentLanguage === 'en' ? 'Select...' : 'ជ្រើសរើស...'}</option>
-                        <option value="blood">Blood Test</option>
-                        <option value="urine">Urine Test</option>
-                        <option value="xray">X-Ray</option>
-                        <option value="ultrasound">Ultrasound</option>
-                    </select>
-                </div>
-                <div class="action-form-group">
-                    <label class="action-form-label">${currentLanguage === 'en' ? 'Priority' : 'អាទិភាព'}</label>
-                    <select class="action-form-select" name="priority" required>
-                        <option value="routine">${currentLanguage === 'en' ? 'Routine' : 'ធម្មតា'}</option>
-                        <option value="urgent">${currentLanguage === 'en' ? 'Urgent' : 'បន្ទាន់'}</option>
-                        <option value="stat">STAT</option>
-                    </select>
-                </div>
-                <div class="action-form-group">
-                    <label class="action-form-label">${currentLanguage === 'en' ? 'Notes' : 'កំណត់ចំណាំ'}</label>
-                    <textarea class="action-form-textarea" name="notes"></textarea>
-                </div>
-                <div class="action-form-actions">
-                    <button type="button" class="action-form-btn action-form-btn-secondary" onclick="closeActionModal()">
-                        ${quickActionTranslations[currentLanguage].cancel}
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeSlidePanel()">
+                        ${currentLanguage === 'en' ? 'Cancel' : 'បោះបង់'}
                     </button>
-                    <button type="submit" class="action-form-btn action-form-btn-primary">
-                        ${quickActionTranslations[currentLanguage].create}
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        ${currentLanguage === 'en' ? 'Create Order' : 'បង្កើតសំណើ'}
                     </button>
                 </div>
             </form>
         `;
     }
-    
+
     function getPaymentForm() {
         return `
             <form id="paymentForm" onsubmit="handlePaymentSubmit(event)">
-                <div class="action-form-group">
-                    <label class="action-form-label">${currentLanguage === 'en' ? 'Patient Name' : 'ឈ្មោះអ្នកជំងឺ'}</label>
-                    <input type="text" class="action-form-input" name="patientName" required>
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i class="fas fa-dollar-sign"></i>
+                        ${currentLanguage === 'en' ? 'Payment Details' : 'ព័ត៌មានការទូទាត់'}
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Patient Name' : 'ឈ្មោះអ្នកជំងឺ'} <span class="required">*</span></label>
+                            <select class="form-select" name="patientId" required>
+                                <option value="">--- ${currentLanguage === 'en' ? 'Select Patient' : 'ជ្រើសរើសអ្នកជំងឺ'} ---</option>
+                                ${mockPatients.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Invoice Number' : 'លេខវិក្កយបត្រ'}</label>
+                            <input type="text" class="form-input" name="invoiceNumber" placeholder="INV-001">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Amount (USD)' : 'ចំនួនទឹកប្រាក់ (ដុល្លារ)'} <span class="required">*</span></label>
+                            <input type="number" class="form-input" name="amount" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Payment Method' : 'វិធីទូទាត់'} <span class="required">*</span></label>
+                            <select class="form-select" name="paymentMethod" required>
+                                <option value="">--- ${currentLanguage === 'en' ? 'Select' : 'ជ្រើសរើស'} ---</option>
+                                <option value="cash">${currentLanguage === 'en' ? 'Cash' : 'សាច់ប្រាក់'}</option>
+                                <option value="card">${currentLanguage === 'en' ? 'Credit/Debit Card' : 'កាត'}</option>
+                                <option value="bank-transfer">${currentLanguage === 'en' ? 'Bank Transfer' : 'ផ្ទេរប្រាក់'}</option>
+                                <option value="mobile-payment">${currentLanguage === 'en' ? 'Mobile Payment' : 'ទូទាត់តាមទូរស័ព្ទ'}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row single">
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Description' : 'ពិពណ៌នា'}</label>
+                            <textarea class="form-textarea" name="description" placeholder="${currentLanguage === 'en' ? 'Payment for...' : 'ការទូទាត់សម្រាប់...'}"></textarea>
+                        </div>
+                    </div>
                 </div>
-                <div class="action-form-group">
-                    <label class="action-form-label">${currentLanguage === 'en' ? 'Amount' : 'ចំនួនទឹកប្រាក់'}</label>
-                    <input type="number" class="action-form-input" name="amount" step="0.01" required>
-                </div>
-                <div class="action-form-group">
-                    <label class="action-form-label">${currentLanguage === 'en' ? 'Payment Method' : 'វិធីទូទាត់'}</label>
-                    <select class="action-form-select" name="paymentMethod" required>
-                        <option value="">${currentLanguage === 'en' ? 'Select...' : 'ជ្រើសរើស...'}</option>
-                        <option value="cash">${currentLanguage === 'en' ? 'Cash' : 'សាច់ប្រាក់'}</option>
-                        <option value="card">${currentLanguage === 'en' ? 'Card' : 'កាត'}</option>
-                        <option value="bank-transfer">${currentLanguage === 'en' ? 'Bank Transfer' : 'ផ្ទេរប្រាក់'}</option>
-                    </select>
-                </div>
-                <div class="action-form-group">
-                    <label class="action-form-label">${currentLanguage === 'en' ? 'Description' : 'ពិពណ៌នា'}</label>
-                    <textarea class="action-form-textarea" name="description"></textarea>
-                </div>
-                <div class="action-form-actions">
-                    <button type="button" class="action-form-btn action-form-btn-secondary" onclick="closeActionModal()">
-                        ${quickActionTranslations[currentLanguage].cancel}
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeSlidePanel()">
+                        ${currentLanguage === 'en' ? 'Cancel' : 'បោះបង់'}
                     </button>
-                    <button type="submit" class="action-form-btn action-form-btn-primary">
-                        ${quickActionTranslations[currentLanguage].create}
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        ${currentLanguage === 'en' ? 'Record Payment' : 'កត់ត្រាការទូទាត់'}
                     </button>
                 </div>
             </form>
         `;
     }
-    
+
     function getEmployeeForm() {
         return `
             <form id="employeeForm" onsubmit="handleEmployeeSubmit(event)">
-                <div class="action-form-group">
-                    <label class="action-form-label">${currentLanguage === 'en' ? 'Full Name' : 'ឈ្មោះពេញ'}</label>
-                    <input type="text" class="action-form-input" name="fullName" required>
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i class="fas fa-user-tie"></i>
+                        ${currentLanguage === 'en' ? 'Employee Information' : 'ព័ត៌មានបុគ្គលិក'}
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Full Name' : 'ឈ្មោះពេញ'} <span class="required">*</span></label>
+                            <input type="text" class="form-input" name="fullName" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Employee ID' : 'លេខសម្គាល់បុគ្គលិក'}</label>
+                            <input type="text" class="form-input" name="employeeId" placeholder="EMP-001">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Position' : 'មុខតំណែង'} <span class="required">*</span></label>
+                            <select class="form-select" name="position" required>
+                                <option value="">--- ${currentLanguage === 'en' ? 'Select' : 'ជ្រើសរើស'} ---</option>
+                                <option value="doctor">${currentLanguage === 'en' ? 'Doctor' : 'គ្រូពេទ្យ'}</option>
+                                <option value="dentist">${currentLanguage === 'en' ? 'Dentist' : 'ទន្តពេទ្យ'}</option>
+                                <option value="nurse">${currentLanguage === 'en' ? 'Nurse' : 'គិលានុបដ្ឋាយិកា'}</option>
+                                <option value="receptionist">${currentLanguage === 'en' ? 'Receptionist' : 'អ្នកទទួលភ្ញៀវ'}</option>
+                                <option value="admin">${currentLanguage === 'en' ? 'Administrator' : 'រដ្ឋបាល'}</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Department' : 'នាយកដ្ឋាន'} <span class="required">*</span></label>
+                            <input type="text" class="form-input" name="department" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Email' : 'អ៊ីមែល'} <span class="required">*</span></label>
+                            <input type="email" class="form-input" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Phone Number' : 'លេខទូរស័ព្ទ'} <span class="required">*</span></label>
+                            <input type="tel" class="form-input" name="phone" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Start Date' : 'ថ្ងៃចាប់ផ្តើម'}</label>
+                            <input type="date" class="form-input" name="startDate">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Salary' : 'ប្រាក់ខែ'}</label>
+                            <input type="number" class="form-input" name="salary" step="0.01">
+                        </div>
+                    </div>
                 </div>
-                <div class="action-form-group">
-                    <label class="action-form-label">${currentLanguage === 'en' ? 'Position' : 'មុខតំណែង'}</label>
-                    <input type="text" class="action-form-input" name="position" required>
-                </div>
-                <div class="action-form-group">
-                    <label class="action-form-label">${currentLanguage === 'en' ? 'Department' : 'នាយកដ្ឋាន'}</label>
-                    <input type="text" class="action-form-input" name="department" required>
-                </div>
-                <div class="action-form-group">
-                    <label class="action-form-label">${currentLanguage === 'en' ? 'Email' : 'អ៊ីមែល'}</label>
-                    <input type="email" class="action-form-input" name="email" required>
-                </div>
-                <div class="action-form-group">
-                    <label class="action-form-label">${currentLanguage === 'en' ? 'Phone Number' : 'លេខទូរស័ព្ទ'}</label>
-                    <input type="tel" class="action-form-input" name="phone" required>
-                </div>
-                <div class="action-form-actions">
-                    <button type="button" class="action-form-btn action-form-btn-secondary" onclick="closeActionModal()">
-                        ${quickActionTranslations[currentLanguage].cancel}
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeSlidePanel()">
+                        ${currentLanguage === 'en' ? 'Cancel' : 'បោះបង់'}
                     </button>
-                    <button type="submit" class="action-form-btn action-form-btn-primary">
-                        ${quickActionTranslations[currentLanguage].create}
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        ${currentLanguage === 'en' ? 'Create Employee' : 'បង្កើតបុគ្គលិក'}
                     </button>
                 </div>
             </form>
         `;
     }
-    
+
     function getPrescriptionForm() {
         return `
             <form id="prescriptionForm" onsubmit="handlePrescriptionSubmit(event)">
-                <div class="action-form-group">
-                    <label class="action-form-label">${currentLanguage === 'en' ? 'Patient Name' : 'ឈ្មោះអ្នកជំងឺ'}</label>
-                    <input type="text" class="action-form-input" name="patientName" required>
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i class="fas fa-prescription"></i>
+                        ${currentLanguage === 'en' ? 'Prescription Details' : 'ព័ត៌មានវេជ្ជបញ្ជា'}
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Patient Name' : 'ឈ្មោះអ្នកជំងឺ'} <span class="required">*</span></label>
+                            <select class="form-select" name="patientId" required>
+                                <option value="">--- ${currentLanguage === 'en' ? 'Select Patient' : 'ជ្រើសរើសអ្នកជំងឺ'} ---</option>
+                                ${mockPatients.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Prescribing Doctor' : 'វេជ្ជបណ្ឌិត'} <span class="required">*</span></label>
+                            <select class="form-select" name="providerId" required>
+                                <option value="">--- ${currentLanguage === 'en' ? 'Select Doctor' : 'ជ្រើសរើសវេជ្ជបណ្ឌិត'} ---</option>
+                                ${mockProviders.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
                 </div>
-                <div class="action-form-group">
-                    <label class="action-form-label">${currentLanguage === 'en' ? 'Medication' : 'ថ្នាំ'}</label>
-                    <input type="text" class="action-form-input" name="medication" required>
+                
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i class="fas fa-pills"></i>
+                        ${currentLanguage === 'en' ? 'Medication' : 'ថ្នាំ'}
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Medication Name' : 'ឈ្មោះថ្នាំ'} <span class="required">*</span></label>
+                            <input type="text" class="form-input" name="medication" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Dosage' : 'ទំហំ'} <span class="required">*</span></label>
+                            <input type="text" class="form-input" name="dosage" placeholder="e.g., 500mg" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Frequency' : 'ប្រេកង់'} <span class="required">*</span></label>
+                            <input type="text" class="form-input" name="frequency" placeholder="e.g., 3 times daily" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Duration' : 'រយៈពេល'} <span class="required">*</span></label>
+                            <input type="text" class="form-input" name="duration" placeholder="e.g., 7 days" required>
+                        </div>
+                    </div>
+                    <div class="form-row single">
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Instructions' : 'សេចក្តីណែនាំ'}</label>
+                            <textarea class="form-textarea" name="instructions" placeholder="${currentLanguage === 'en' ? 'Take with food...' : 'ញ៉ាំជាមួយអាហារ...'}"></textarea>
+                        </div>
+                    </div>
                 </div>
-                <div class="action-form-group">
-                    <label class="action-form-label">${currentLanguage === 'en' ? 'Dosage' : 'ទំហំ'}</label>
-                    <input type="text" class="action-form-input" name="dosage" required>
-                </div>
-                <div class="action-form-group">
-                    <label class="action-form-label">${currentLanguage === 'en' ? 'Frequency' : 'ប្រេកង់'}</label>
-                    <input type="text" class="action-form-input" name="frequency" placeholder="e.g., 3 times daily" required>
-                </div>
-                <div class="action-form-group">
-                    <label class="action-form-label">${currentLanguage === 'en' ? 'Duration' : 'រយៈពេល'}</label>
-                    <input type="text" class="action-form-input" name="duration" placeholder="e.g., 7 days" required>
-                </div>
-                <div class="action-form-group">
-                    <label class="action-form-label">${currentLanguage === 'en' ? 'Instructions' : 'សេចក្តីណែនាំ'}</label>
-                    <textarea class="action-form-textarea" name="instructions"></textarea>
-                </div>
-                <div class="action-form-actions">
-                    <button type="button" class="action-form-btn action-form-btn-secondary" onclick="closeActionModal()">
-                        ${quickActionTranslations[currentLanguage].cancel}
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeSlidePanel()">
+                        ${currentLanguage === 'en' ? 'Cancel' : 'បោះបង់'}
                     </button>
-                    <button type="submit" class="action-form-btn action-form-btn-primary">
-                        ${quickActionTranslations[currentLanguage].create}
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        ${currentLanguage === 'en' ? 'Create Prescription' : 'បង្កើតវេជ្ជបញ្ជា'}
                     </button>
                 </div>
             </form>
         `;
     }
-    
+
     function getServicesForm() {
         return `
             <form id="servicesForm" onsubmit="handleServicesSubmit(event)">
-                <div class="action-form-group">
-                    <label class="action-form-label">${currentLanguage === 'en' ? 'Service Name' : 'ឈ្មោះសេវាកម្ម'}</label>
-                    <input type="text" class="action-form-input" name="serviceName" required>
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i class="fas fa-hand-holding-medical"></i>
+                        ${currentLanguage === 'en' ? 'Service Details' : 'ព័ត៌មានសេវាកម្ម'}
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Service Name' : 'ឈ្មោះសេវាកម្ម'} <span class="required">*</span></label>
+                            <input type="text" class="form-input" name="serviceName" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Service Code' : 'លេខកូដសេវា'}</label>
+                            <input type="text" class="form-input" name="serviceCode" placeholder="SVC-001">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Category' : 'ប្រភេទ'} <span class="required">*</span></label>
+                            <select class="form-select" name="category" required>
+                                <option value="">--- ${currentLanguage === 'en' ? 'Select' : 'ជ្រើសរើស'} ---</option>
+                                <option value="consultation">${currentLanguage === 'en' ? 'Consultation' : 'ពិគ្រោះ'}</option>
+                                <option value="procedure">${currentLanguage === 'en' ? 'Procedure' : 'វិធីសាស្រ្ត'}</option>
+                                <option value="diagnostic">${currentLanguage === 'en' ? 'Diagnostic' : 'ការវិនិច្ឆ័យ'}</option>
+                                <option value="therapy">${currentLanguage === 'en' ? 'Therapy' : 'ការព្យាបាល'}</option>
+                                <option value="surgery">${currentLanguage === 'en' ? 'Surgery' : 'វះកាត់'}</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Price (USD)' : 'តម្លៃ (ដុល្លារ)'} <span class="required">*</span></label>
+                            <input type="number" class="form-input" name="price" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Duration (minutes)' : 'រយៈពេល (នាទី)'}</label>
+                            <input type="number" class="form-input" name="duration">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Status' : 'ស្ថានភាព'}</label>
+                            <select class="form-select" name="status">
+                                <option value="active">${currentLanguage === 'en' ? 'Active' : 'សកម្ម'}</option>
+                                <option value="inactive">${currentLanguage === 'en' ? 'Inactive' : 'អសកម្ម'}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row single">
+                        <div class="form-group">
+                            <label class="form-label">${currentLanguage === 'en' ? 'Description' : 'ពិពណ៌នា'}</label>
+                            <textarea class="form-textarea" name="description"></textarea>
+                        </div>
+                    </div>
                 </div>
-                <div class="action-form-group">
-                    <label class="action-form-label">${currentLanguage === 'en' ? 'Category' : 'ប្រភេទ'}</label>
-                    <select class="action-form-select" name="category" required>
-                        <option value="">${currentLanguage === 'en' ? 'Select...' : 'ជ្រើសរើស...'}</option>
-                        <option value="consultation">${currentLanguage === 'en' ? 'Consultation' : 'ពិគ្រោះ'}</option>
-                        <option value="procedure">${currentLanguage === 'en' ? 'Procedure' : 'វិធីសាស្រ្ត'}</option>
-                        <option value="diagnostic">${currentLanguage === 'en' ? 'Diagnostic' : 'ការវិនិច្ឆ័យ'}</option>
-                        <option value="therapy">${currentLanguage === 'en' ? 'Therapy' : 'ការព្យាបាល'}</option>
-                    </select>
-                </div>
-                <div class="action-form-group">
-                    <label class="action-form-label">${currentLanguage === 'en' ? 'Price' : 'តម្លៃ'}</label>
-                    <input type="number" class="action-form-input" name="price" step="0.01" required>
-                </div>
-                <div class="action-form-group">
-                    <label class="action-form-label">${currentLanguage === 'en' ? 'Duration (minutes)' : 'រយៈពេល (នាទី)'}</label>
-                    <input type="number" class="action-form-input" name="duration" required>
-                </div>
-                <div class="action-form-group">
-                    <label class="action-form-label">${currentLanguage === 'en' ? 'Description' : 'ពិពណ៌នា'}</label>
-                    <textarea class="action-form-textarea" name="description"></textarea>
-                </div>
-                <div class="action-form-actions">
-                    <button type="button" class="action-form-btn action-form-btn-secondary" onclick="closeActionModal()">
-                        ${quickActionTranslations[currentLanguage].cancel}
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeSlidePanel()">
+                        ${currentLanguage === 'en' ? 'Cancel' : 'បោះបង់'}
                     </button>
-                    <button type="submit" class="action-form-btn action-form-btn-primary">
-                        ${quickActionTranslations[currentLanguage].create}
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        ${currentLanguage === 'en' ? 'Create Service' : 'បង្កើតសេវាកម្ម'}
                     </button>
                 </div>
             </form>
         `;
     }
-    
+
     // Form Submit Handlers
+    window.handleAppointmentSubmit = function(e, editId = null) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData);
+        
+        const patient = mockPatients.find(p => p.id == data.patientId);
+        const provider = mockProviders.find(p => p.id == data.providerId);
+        
+        // Build date/time from separate fields
+        const appointmentDate = data.appointmentDate || formatDateKey(new Date());
+        const startTime = data.startTime || '09:00';
+        const endTime = data.endTime || '10:00';
+        const dateStart = `${appointmentDate} ${startTime}`;
+        const dateEnd = `${appointmentDate} ${endTime}`;
+        
+        const appointmentData = {
+            id: editId || Date.now(),
+            patientId: parseInt(data.patientId),
+            patientName: patient ? patient.name : '',
+            providerId: parseInt(data.providerId),
+            providerName: provider ? provider.name : '',
+            treatmentCategory: data.treatmentCategory,
+            roomNumber: parseInt(data.roomNumber) || 1,
+            title: data.title || 'Appointment',
+            dateStart: dateStart,
+            dateEnd: dateEnd,
+            type: data.type || 'appointment',
+            notes: data.notes || ''
+        };
+        
+        if (editId) {
+            const index = appointments.findIndex(a => a.id === editId);
+            if (index !== -1) {
+                appointments[index] = appointmentData;
+            }
+        } else {
+            appointments.push(appointmentData);
+        }
+        
+        localStorage.setItem('calendar-appointments', JSON.stringify(appointments));
+        renderCalendar();
+        renderAppointments();
+        
+        closeSlidePanel();
+        alert(currentLanguage === 'en' 
+            ? (editId ? 'Appointment updated!' : 'Appointment created!') 
+            : (editId ? 'បានធ្វើបច្ចុប្បន្នភាពការណាត់ជួប!' : 'បានបង្កើតការណាត់ជួប!'));
+    };
+
     window.handlePatientSubmit = function(e) {
         e.preventDefault();
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData);
         console.log('Patient Data:', data);
         
-        // TODO: Save to database/API
+        closeSlidePanel();
         alert(currentLanguage === 'en' ? 'Patient created successfully!' : 'បានបង្កើតអ្នកជំងឺដោយជោគជ័យ!');
-        closeActionModal();
     };
-    
-    window.handleAppointmentSubmit = function(e) {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        const data = Object.fromEntries(formData);
-        console.log('Appointment Data:', data);
-        
-        // Add to appointments array
-        const dateStr = data.date;
-        appointments.push({
-            id: Date.now(),
-            date: dateStr,
-            title: `${data.patientName} - ${data.reason || 'Appointment'}`,
-            time: data.time
-        });
-        
-        localStorage.setItem('calendar-appointments', JSON.stringify(appointments));
-        renderAppointments();
-        renderCalendar();
-        
-        alert(currentLanguage === 'en' ? 'Appointment created successfully!' : 'បានបង្កើតការណាត់ជួបដោយជោគជ័យ!');
-        closeActionModal();
-    };
-    
+
     window.handleLabOrderSubmit = function(e) {
         e.preventDefault();
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData);
         console.log('Lab Order Data:', data);
         
+        closeSlidePanel();
         alert(currentLanguage === 'en' ? 'Lab order created successfully!' : 'បានបង្កើតសំណើមន្ទីរពិសោធន៍ដោយជោគជ័យ!');
-        closeActionModal();
     };
-    
+
     window.handlePaymentSubmit = function(e) {
         e.preventDefault();
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData);
         console.log('Payment Data:', data);
         
+        closeSlidePanel();
         alert(currentLanguage === 'en' ? 'Payment recorded successfully!' : 'បានកត់ត្រាការទូទាត់ដោយជោគជ័យ!');
-        closeActionModal();
     };
-    
+
     window.handleEmployeeSubmit = function(e) {
         e.preventDefault();
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData);
         console.log('Employee Data:', data);
         
+        closeSlidePanel();
         alert(currentLanguage === 'en' ? 'Employee created successfully!' : 'បានបង្កើតបុគ្គលិកដោយជោគជ័យ!');
-        closeActionModal();
     };
-    
+
     window.handlePrescriptionSubmit = function(e) {
         e.preventDefault();
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData);
         console.log('Prescription Data:', data);
         
+        closeSlidePanel();
         alert(currentLanguage === 'en' ? 'Prescription created successfully!' : 'បានបង្កើតវេជ្ជបញ្ជាដោយជោគជ័យ!');
-        closeActionModal();
     };
-    
+
     window.handleServicesSubmit = function(e) {
         e.preventDefault();
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData);
         console.log('Service Data:', data);
         
+        closeSlidePanel();
         alert(currentLanguage === 'en' ? 'Service created successfully!' : 'បានបង្កើតសេវាកម្មដោយជោគជ័យ!');
-        closeActionModal();
+    };
+
+    // Make closeSlidePanel global
+    window.closeSlidePanel = closeSlidePanel;
+
+    // ====================
+    // QUICK ACTION DROPDOWN
+    // ====================
+    
+    let userRole = localStorage.getItem('user-role') || 'staff';
+    
+    const quickActionTranslations = {
+        en: {
+            quickAction: 'New',
+            dropdownTitle: 'Quick Actions'
+        },
+        kh: {
+            quickAction: 'ថ្មី',
+            dropdownTitle: 'សកម្មភាពរហ័ស'
+        }
     };
     
-    // Close modal on background click
-    $('#actionModal').click(function(e) {
-        if (e.target === this) {
-            closeActionModal();
+    function updateQuickActionLanguage() {
+        $('#quickActionText').text(quickActionTranslations[currentLanguage].quickAction);
+        $('#dropdownTitle').text(quickActionTranslations[currentLanguage].dropdownTitle);
+        
+        $('.action-label').each(function() {
+            const $label = $(this);
+            const enText = $label.attr('data-en');
+            const khText = $label.attr('data-kh');
+            $label.text(currentLanguage === 'en' ? enText : khText);
+        });
+    }
+    
+    $('#quickActionBtn').click(function(e) {
+        e.stopPropagation();
+        const $dropdown = $('#quickActionDropdown');
+        const isOpen = $dropdown.hasClass('show');
+        
+        if (isOpen) {
+            closeQuickActionDropdown();
+        } else {
+            openQuickActionDropdown();
         }
     });
     
-    // Initialize quick action language
-    updateQuickActionLanguage();
+    function openQuickActionDropdown() {
+        $('#quickActionDropdown').addClass('show');
+        $('#quickActionBtn').attr('aria-expanded', 'true');
+        filterActionsByPermission();
+        
+        setTimeout(() => {
+            $('.quick-action-item:visible:first').focus();
+        }, 100);
+    }
     
-    // ====================
-    // END QUICK ACTION DROPDOWN
-    // ====================
+    function closeQuickActionDropdown() {
+        $('#quickActionDropdown').removeClass('show');
+        $('#quickActionBtn').attr('aria-expanded', 'false');
+    }
     
+    $(document).click(function(e) {
+        if (!$(e.target).closest('.quick-action-wrapper').length) {
+            closeQuickActionDropdown();
+        }
+    });
+    
+    $(document).keydown(function(e) {
+        if (e.key === 'Escape') {
+            closeQuickActionDropdown();
+            closeSlidePanel();
+        }
+    });
+    
+    function filterActionsByPermission() {
+        $('.quick-action-item').each(function() {
+            const $item = $(this);
+            const requiredPermission = $item.attr('data-permission');
+            
+            const canAccess = (
+                userRole === 'admin' ||
+                (userRole === 'clinical' && requiredPermission !== 'admin') ||
+                (userRole === 'staff' && requiredPermission === 'staff')
+            );
+            
+            if (canAccess) {
+                $item.show();
+            } else {
+                $item.hide();
+            }
+        });
+    }
+    
+    $('.quick-action-item').click(function() {
+        const action = $(this).attr('data-action');
+        handleQuickAction(action);
+        closeQuickActionDropdown();
+    });
+    
+    $('.quick-action-item').keydown(function(e) {
+        const $items = $('.quick-action-item:visible');
+        const currentIndex = $items.index(this);
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            const nextIndex = (currentIndex + 1) % $items.length;
+            $items.eq(nextIndex).focus();
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            const prevIndex = (currentIndex - 1 + $items.length) % $items.length;
+            $items.eq(prevIndex).focus();
+        } else if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            $(this).click();
+        }
+    });
+    
+    function handleQuickAction(action) {
+        openSlidePanel(action);
+    }
+
+    // Language Toggle
+    $('#langToggle').click(function() {
+        currentLanguage = currentLanguage === 'en' ? 'kh' : 'en';
+        localStorage.setItem('calendar-language', currentLanguage);
+        const flag = currentLanguage === 'en' ? '🇬🇧' : '🇰🇭';
+        const text = currentLanguage === 'en' ? 'English' : 'ខ្មែរ';
+        $(this).find('.lang-flag').text(flag);
+        $(this).find('#langText').text(text);
+        
+        updateQuickActionLanguage();
+        updateSidebarTitle();
+        populateProviderFilter();
+        renderCalendar();
+    });
+
+    // Navigation
+    $('.btn-prev-month').click(function() {
+        currentDate.setMonth(currentDate.getMonth() - 1);
+        renderCalendar();
+    });
+
+    $('.btn-next-month').click(function() {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        renderCalendar();
+    });
+
+    $('.btn-refresh').click(function() {
+        currentDate = new Date();
+        renderCalendar();
+    });
+
     // Initialize
-    updateButtonLabels();
+    updateQuickActionLanguage();
     updateSidebarTitle();
+    populateProviderFilter();
     
-    // Set initial language UI
     const flag = currentLanguage === 'en' ? '🇬🇧' : '🇰🇭';
     const text = currentLanguage === 'en' ? 'English' : 'ខ្មែរ';
     $('#langToggle').find('.lang-flag').text(flag);
     $('#langToggle').find('#langText').text(text);
     
-    // Clear caches on startup to ensure fresh data
     holidaysCache = {};
     buddhistEventsCache = {};
     
+    console.log('🔄 Initializing calendar...');
+    console.log('📅 Calendar body element:', $('#calendarBody').length);
     renderCalendar();
-    renderAppointments();
+    console.log('📅 Calendar rendered');
     console.log('✅ Khmer Lunar Calendar loaded successfully!');
 });
