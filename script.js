@@ -688,8 +688,11 @@ $(document).ready(function() {
                                 <span><i class="fas fa-clock"></i> ${timeStart} - ${timeEnd}</span>
                                 <span><i class="fas fa-door-open"></i> Room ${apt.roomNumber}</span>
                             </div>
-                            <div style="margin-top: 0.5rem;">
+                            <div class="appointment-footer">
                                 <span class="appointment-type-badge ${apt.type}">${apt.type}</span>
+                                <div class="appointment-quick-actions">
+                                    ${getQuickActionButtons(apt)}
+                                </div>
                             </div>
                         </div>
                     `;
@@ -745,7 +748,7 @@ $(document).ready(function() {
     // SLIDE PANEL
     // ====================
 
-    function openSlidePanel(type, data = null) {
+    window.openSlidePanel = function(type, data = null) {
         const panel = $('#slidePanel');
         const overlay = $('#slidePanelOverlay');
         const icon = $('#slidePanelIcon');
@@ -770,7 +773,7 @@ $(document).ready(function() {
         setTimeout(() => {
             body.find('input, select, textarea').first().focus();
         }, 300);
-    }
+    };
 
     function closeSlidePanel() {
         $('#slidePanel').removeClass('show');
@@ -1647,6 +1650,664 @@ $(document).ready(function() {
     
     holidaysCache = {};
     buddhistEventsCache = {};
+    
+    // ====================
+    // CURRENT VIEW STATE
+    // ====================
+    let currentView = 'calendar'; // 'calendar', 'timeline', 'dashboard'
+    let timelineDate = new Date();
+    
+    // ====================
+    // VIEW TOGGLE
+    // ====================
+    $('#viewCalendar').click(function() {
+        switchView('calendar');
+    });
+    
+    $('#viewTimeline').click(function() {
+        switchView('timeline');
+    });
+    
+    $('#viewDashboard').click(function() {
+        switchView('dashboard');
+    });
+    
+    function switchView(view) {
+        currentView = view;
+        
+        // Update button states
+        $('.view-btn').removeClass('active');
+        $(`#view${view.charAt(0).toUpperCase() + view.slice(1)}`).addClass('active');
+        
+        // Show/hide sections
+        $('#calendarMain, #appointmentsSidebar').toggle(view === 'calendar');
+        $('#timelineSection').toggle(view === 'timeline');
+        $('#dashboardSection').toggle(view === 'dashboard');
+        
+        // Render appropriate view
+        if (view === 'timeline') {
+            renderTimeline();
+        } else if (view === 'dashboard') {
+            renderDashboard();
+        }
+    }
+    
+    // ====================
+    // GLOBAL SEARCH
+    // ====================
+    let searchTimeout;
+    
+    $('#globalSearch').on('input', function() {
+        const query = $(this).val().trim().toLowerCase();
+        
+        clearTimeout(searchTimeout);
+        
+        if (query.length < 2) {
+            $('#searchResults').hide();
+            $('#searchClear').hide();
+            return;
+        }
+        
+        $('#searchClear').show();
+        
+        searchTimeout = setTimeout(() => {
+            performSearch(query);
+        }, 300);
+    });
+    
+    $('#searchClear').click(function() {
+        $('#globalSearch').val('');
+        $('#searchResults').hide();
+        $(this).hide();
+    });
+    
+    function performSearch(query) {
+        const results = [];
+        
+        // Search patients
+        mockPatients.forEach(patient => {
+            if (patient.name.toLowerCase().includes(query) || 
+                patient.phone.includes(query)) {
+                results.push({
+                    type: 'patient',
+                    icon: 'fa-user',
+                    title: patient.name,
+                    subtitle: patient.phone,
+                    data: patient
+                });
+            }
+        });
+        
+        // Search appointments
+        appointments.forEach(apt => {
+            if (apt.patientName.toLowerCase().includes(query) ||
+                apt.providerName.toLowerCase().includes(query) ||
+                apt.title.toLowerCase().includes(query)) {
+                const date = apt.dateStart.split(' ')[0];
+                const time = apt.dateStart.split(' ')[1];
+                results.push({
+                    type: 'appointment',
+                    icon: 'fa-calendar',
+                    title: apt.patientName,
+                    subtitle: `${date} at ${time} - ${apt.providerName}`,
+                    data: apt
+                });
+            }
+        });
+        
+        renderSearchResults(results);
+    }
+    
+    function renderSearchResults(results) {
+        const $container = $('#searchResults');
+        
+        if (results.length === 0) {
+            $container.html('<div class="search-no-results">No results found</div>');
+            $container.show();
+            return;
+        }
+        
+        let html = '';
+        results.slice(0, 10).forEach(result => {
+            html += `
+                <div class="search-result-item" data-type="${result.type}" data-id="${result.data.id}">
+                    <i class="fas ${result.icon}"></i>
+                    <div class="search-result-info">
+                        <div class="search-result-title">${result.title}</div>
+                        <div class="search-result-subtitle">${result.subtitle}</div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        if (results.length > 10) {
+            html += `<div class="search-more">+${results.length - 10} more results</div>`;
+        }
+        
+        $container.html(html);
+        $container.show();
+    }
+    
+    $(document).on('click', '.search-result-item', function() {
+        const type = $(this).data('type');
+        const id = $(this).data('id');
+        
+        if (type === 'appointment') {
+            editAppointment(id);
+        } else if (type === 'patient') {
+            showPatientHistory(id);
+        }
+        
+        $('#searchResults').hide();
+        $('#globalSearch').val('');
+        $('#searchClear').hide();
+    });
+    
+    // Close search results when clicking outside
+    $(document).click(function(e) {
+        if (!$(e.target).closest('.search-wrapper').length) {
+            $('#searchResults').hide();
+        }
+    });
+    
+    // ====================
+    // PATIENT HISTORY
+    // ====================
+    window.showPatientHistory = function(patientId) {
+        const patient = mockPatients.find(p => p.id === patientId);
+        if (!patient) return;
+        
+        const patientAppointments = appointments.filter(apt => apt.patientId === patientId);
+        
+        openSlidePanel('patient-history', { patient, appointments: patientAppointments });
+    };
+    
+    // ====================
+    // DASHBOARD
+    // ====================
+    function renderDashboard() {
+        const today = new Date();
+        const todayKey = formatDateKey(today);
+        
+        // Get today's appointments
+        const todayAppointments = appointments.filter(apt => 
+            apt.dateStart && apt.dateStart.startsWith(todayKey)
+        );
+        
+        // Calculate stats
+        const total = todayAppointments.length;
+        const waiting = todayAppointments.filter(apt => apt.type === 'queue').length;
+        const completed = todayAppointments.filter(apt => apt.type === 'finished').length;
+        const cancelled = todayAppointments.filter(apt => apt.type === 'cancelled').length;
+        
+        // Update stat cards
+        $('#statTotal').text(total);
+        $('#statWaiting').text(waiting);
+        $('#statCompleted').text(completed);
+        $('#statCancelled').text(cancelled);
+        
+        // Next Upcoming
+        const now = new Date();
+        const upcoming = todayAppointments
+            .filter(apt => {
+                const aptTime = new Date(apt.dateStart.replace(' ', 'T'));
+                return aptTime > now && apt.type !== 'finished' && apt.type !== 'cancelled';
+            })
+            .sort((a, b) => new Date(a.dateStart) - new Date(b.dateStart));
+        
+        if (upcoming.length > 0) {
+            const next = upcoming[0];
+            const time = next.dateStart.split(' ')[1];
+            $('#nextUpcoming').html(`
+                <div class="upcoming-item">
+                    <div class="upcoming-time">${time}</div>
+                    <div class="upcoming-info">
+                        <div class="upcoming-patient">${next.patientName}</div>
+                        <div class="upcoming-details">${next.providerName} • Room ${next.roomNumber}</div>
+                    </div>
+                    <div class="upcoming-countdown" id="countdown"></div>
+                </div>
+            `);
+            startCountdown(next.dateStart);
+        } else {
+            $('#nextUpcoming').html('<div class="no-data">No upcoming appointments</div>');
+        }
+        
+        // Waiting Queue
+        const queue = todayAppointments.filter(apt => apt.type === 'queue');
+        if (queue.length > 0) {
+            let queueHtml = '';
+            queue.forEach((apt, index) => {
+                queueHtml += `
+                    <div class="queue-item">
+                        <span class="queue-number">${index + 1}</span>
+                        <div class="queue-info">
+                            <div class="queue-patient">${apt.patientName}</div>
+                            <div class="queue-time">${apt.dateStart.split(' ')[1]}</div>
+                        </div>
+                        <button class="queue-action-btn" onclick="quickStatusChange(${apt.id}, 'appointment')">
+                            <i class="fas fa-play"></i>
+                        </button>
+                    </div>
+                `;
+            });
+            $('#waitingQueue').html(queueHtml);
+        } else {
+            $('#waitingQueue').html('<div class="no-data">No patients waiting</div>');
+        }
+        
+        // Provider Status
+        let providerHtml = '';
+        mockProviders.forEach(provider => {
+            const providerApts = todayAppointments.filter(apt => apt.providerId === provider.id);
+            const inProgress = providerApts.filter(apt => apt.type === 'appointment').length;
+            const done = providerApts.filter(apt => apt.type === 'finished').length;
+            const status = inProgress > 0 ? 'busy' : 'available';
+            
+            providerHtml += `
+                <div class="provider-status-item">
+                    <div class="provider-avatar" style="background: ${provider.color}">
+                        ${provider.name.split(' ').pop().charAt(0)}
+                    </div>
+                    <div class="provider-info">
+                        <div class="provider-name">${provider.name}</div>
+                        <div class="provider-stats">${done}/${providerApts.length} completed</div>
+                    </div>
+                    <span class="provider-badge ${status}">${status}</span>
+                </div>
+            `;
+        });
+        $('#providerStatus').html(providerHtml);
+        
+        // Recent Activity
+        const recentApts = [...appointments]
+            .sort((a, b) => new Date(b.dateStart) - new Date(a.dateStart))
+            .slice(0, 5);
+        
+        if (recentApts.length > 0) {
+            let activityHtml = '';
+            recentApts.forEach(apt => {
+                const icon = apt.type === 'finished' ? 'check-circle' : 
+                            apt.type === 'cancelled' ? 'times-circle' : 'calendar';
+                const color = apt.type === 'finished' ? '#22c55e' : 
+                             apt.type === 'cancelled' ? '#ef4444' : '#3b82f6';
+                
+                activityHtml += `
+                    <div class="activity-item">
+                        <i class="fas fa-${icon}" style="color: ${color}"></i>
+                        <div class="activity-info">
+                            <div class="activity-text">${apt.patientName} - ${apt.title}</div>
+                            <div class="activity-time">${apt.dateStart}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            $('#recentActivity').html(activityHtml);
+        }
+    }
+    
+    let countdownInterval;
+    function startCountdown(dateTimeStr) {
+        if (countdownInterval) clearInterval(countdownInterval);
+        
+        countdownInterval = setInterval(() => {
+            const target = new Date(dateTimeStr.replace(' ', 'T'));
+            const now = new Date();
+            const diff = target - now;
+            
+            if (diff <= 0) {
+                $('#countdown').html('<span class="countdown-now">NOW!</span>');
+                clearInterval(countdownInterval);
+                return;
+            }
+            
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            
+            let text = '';
+            if (hours > 0) text += `${hours}h `;
+            text += `${minutes}m ${seconds}s`;
+            
+            $('#countdown').html(`<span class="countdown-timer">${text}</span>`);
+        }, 1000);
+    }
+    
+    // ====================
+    // TIMELINE VIEW
+    // ====================
+    $('#timelinePrev').click(function() {
+        timelineDate.setDate(timelineDate.getDate() - 1);
+        renderTimeline();
+    });
+    
+    $('#timelineNext').click(function() {
+        timelineDate.setDate(timelineDate.getDate() + 1);
+        renderTimeline();
+    });
+    
+    $('#timelineToday').click(function() {
+        timelineDate = new Date();
+        renderTimeline();
+    });
+    
+    function renderTimeline() {
+        const dateKey = formatDateKey(timelineDate);
+        const today = new Date();
+        const isToday = formatDateKey(today) === dateKey;
+        
+        // Update header
+        const dayName = translations[currentLanguage].daysFull[timelineDate.getDay()];
+        const dayNum = timelineDate.getDate();
+        const monthName = translations[currentLanguage].months[timelineDate.getMonth()];
+        $('#timelineDate').text(isToday ? 
+            `Today, ${dayNum} ${monthName}` : 
+            `${dayName}, ${dayNum} ${monthName}`);
+        
+        // Get appointments for this day
+        const dayAppointments = appointments.filter(apt => 
+            apt.dateStart && apt.dateStart.startsWith(dateKey)
+        );
+        
+        // Build timeline grid
+        let html = '';
+        
+        // Provider columns header
+        html += '<div class="timeline-providers-header">';
+        html += '<div class="timeline-time-header">Time</div>';
+        mockProviders.forEach(provider => {
+            html += `<div class="timeline-provider-header" style="border-top: 3px solid ${provider.color}">
+                ${provider.name.split(' ').pop()}
+            </div>`;
+        });
+        html += '</div>';
+        
+        // Time slots (7 AM to 7 PM)
+        for (let hour = 7; hour <= 19; hour++) {
+            const timeStr = `${hour.toString().padStart(2, '0')}:00`;
+            const nowHour = today.getHours();
+            const isCurrentHour = isToday && hour === nowHour;
+            
+            html += `<div class="timeline-row ${isCurrentHour ? 'current-hour' : ''}">`;
+            html += `<div class="timeline-time">${timeStr}</div>`;
+            
+            mockProviders.forEach(provider => {
+                const slotApts = dayAppointments.filter(apt => {
+                    const aptHour = parseInt(apt.dateStart.split(' ')[1].split(':')[0]);
+                    return apt.providerId === provider.id && aptHour === hour;
+                });
+                
+                html += `<div class="timeline-slot" data-provider="${provider.id}" data-time="${timeStr}" data-date="${dateKey}">`;
+                
+                slotApts.forEach(apt => {
+                    const duration = calculateDuration(apt.dateStart, apt.dateEnd);
+                    html += `
+                        <div class="timeline-appointment ${apt.type}" 
+                             style="background: ${provider.color}20; border-left-color: ${provider.color}"
+                             onclick="editAppointment(${apt.id})">
+                            <div class="timeline-apt-time">${apt.dateStart.split(' ')[1]} - ${apt.dateEnd.split(' ')[1]}</div>
+                            <div class="timeline-apt-patient">${apt.patientName}</div>
+                            <div class="timeline-apt-room">Room ${apt.roomNumber}</div>
+                            <div class="timeline-apt-actions">
+                                ${getQuickActionButtons(apt)}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+            });
+            
+            html += '</div>';
+        }
+        
+        $('#timelineGrid').html(html);
+    }
+    
+    function calculateDuration(start, end) {
+        const startTime = new Date(`2000-01-01T${start.split(' ')[1]}`);
+        const endTime = new Date(`2000-01-01T${end.split(' ')[1]}`);
+        return (endTime - startTime) / (1000 * 60); // in minutes
+    }
+    
+    // ====================
+    // QUICK STATUS CHANGE
+    // ====================
+    function getQuickActionButtons(apt) {
+        let buttons = '';
+        
+        if (apt.type === 'queue') {
+            buttons = `
+                <button class="quick-status-btn start" onclick="event.stopPropagation(); quickStatusChange(${apt.id}, 'appointment')" title="Start">
+                    <i class="fas fa-play"></i>
+                </button>
+                <button class="quick-status-btn cancel" onclick="event.stopPropagation(); quickStatusChange(${apt.id}, 'cancelled')" title="Cancel">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+        } else if (apt.type === 'appointment') {
+            buttons = `
+                <button class="quick-status-btn complete" onclick="event.stopPropagation(); quickStatusChange(${apt.id}, 'finished')" title="Complete">
+                    <i class="fas fa-check"></i>
+                </button>
+                <button class="quick-status-btn cancel" onclick="event.stopPropagation(); quickStatusChange(${apt.id}, 'cancelled')" title="Cancel">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+        } else if (apt.type === 'followup') {
+            buttons = `
+                <button class="quick-status-btn checkin" onclick="event.stopPropagation(); quickStatusChange(${apt.id}, 'queue')" title="Check-in">
+                    <i class="fas fa-user-check"></i>
+                </button>
+                <button class="quick-status-btn cancel" onclick="event.stopPropagation(); quickStatusChange(${apt.id}, 'cancelled')" title="Cancel">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+        }
+        
+        return buttons;
+    }
+    
+    window.quickStatusChange = function(aptId, newStatus) {
+        const apt = appointments.find(a => a.id === aptId);
+        if (!apt) return;
+        
+        apt.type = newStatus;
+        localStorage.setItem('calendar-appointments', JSON.stringify(appointments));
+        
+        // Refresh current view
+        if (currentView === 'calendar') {
+            renderCalendar();
+            renderAppointments();
+        } else if (currentView === 'timeline') {
+            renderTimeline();
+        } else if (currentView === 'dashboard') {
+            renderDashboard();
+        }
+        
+        // Show notification
+        showNotification(currentLanguage === 'en' ? 
+            `Status changed to ${newStatus}` : 
+            `ស្ថានភាពបានប្តូរទៅ ${newStatus}`);
+    };
+    
+    // ====================
+    // NOTIFICATIONS
+    // ====================
+    function showNotification(message, type = 'success') {
+        const $notification = $(`
+            <div class="notification ${type}">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
+                <span>${message}</span>
+            </div>
+        `);
+        
+        $('body').append($notification);
+        
+        setTimeout(() => $notification.addClass('show'), 10);
+        setTimeout(() => {
+            $notification.removeClass('show');
+            setTimeout(() => $notification.remove(), 300);
+        }, 3000);
+    }
+    
+    // ====================
+    // CONFLICT DETECTION
+    // ====================
+    function checkConflicts(newApt, excludeId = null) {
+        const conflicts = [];
+        
+        appointments.forEach(apt => {
+            if (excludeId && apt.id === excludeId) return;
+            if (apt.type === 'cancelled') return;
+            
+            // Check if same date
+            const newDate = newApt.dateStart.split(' ')[0];
+            const aptDate = apt.dateStart.split(' ')[0];
+            if (newDate !== aptDate) return;
+            
+            // Check time overlap
+            const newStart = new Date(`2000-01-01T${newApt.dateStart.split(' ')[1]}`);
+            const newEnd = new Date(`2000-01-01T${newApt.dateEnd.split(' ')[1]}`);
+            const aptStart = new Date(`2000-01-01T${apt.dateStart.split(' ')[1]}`);
+            const aptEnd = new Date(`2000-01-01T${apt.dateEnd.split(' ')[1]}`);
+            
+            const hasOverlap = newStart < aptEnd && newEnd > aptStart;
+            
+            if (hasOverlap) {
+                // Check provider conflict
+                if (newApt.providerId === apt.providerId) {
+                    conflicts.push({
+                        type: 'provider',
+                        message: `${apt.providerName} already has an appointment at this time`,
+                        appointment: apt
+                    });
+                }
+                
+                // Check room conflict
+                if (newApt.roomNumber === apt.roomNumber) {
+                    conflicts.push({
+                        type: 'room',
+                        message: `Room ${apt.roomNumber} is already booked at this time`,
+                        appointment: apt
+                    });
+                }
+            }
+        });
+        
+        return conflicts;
+    }
+    
+    // Show conflicts in form
+    window.validateAppointmentForm = function() {
+        const formData = {
+            providerId: parseInt($('#providerId').val()),
+            providerName: $('#providerId option:selected').text(),
+            roomNumber: parseInt($('#roomNumber').val()),
+            dateStart: `${$('#appointmentDate').val()} ${$('#startTime').val()}`,
+            dateEnd: `${$('#appointmentDate').val()} ${$('#endTime').val()}`
+        };
+        
+        const editId = $('#appointmentForm').data('edit-id');
+        const conflicts = checkConflicts(formData, editId);
+        
+        const $conflictArea = $('#conflictWarning');
+        if (conflicts.length > 0) {
+            let html = '<div class="conflict-warning"><i class="fas fa-exclamation-triangle"></i> Conflicts detected:<ul>';
+            conflicts.forEach(c => {
+                html += `<li>${c.message}</li>`;
+            });
+            html += '</ul></div>';
+            
+            if ($conflictArea.length === 0) {
+                $('.form-section').first().before(`<div id="conflictWarning">${html}</div>`);
+            } else {
+                $conflictArea.html(html);
+            }
+        } else {
+            $conflictArea.remove();
+        }
+        
+        return conflicts.length === 0;
+    };
+    
+    // Add event listeners for conflict checking
+    $(document).on('change', '#providerId, #roomNumber, #appointmentDate, #startTime, #endTime', function() {
+        if ($('#appointmentForm').length) {
+            validateAppointmentForm();
+        }
+    });
+    
+    // Update patient history panel config
+    const originalGetPanelConfig = getPanelConfig;
+    getPanelConfig = function(type, data = null) {
+        if (type === 'patient-history') {
+            return {
+                icon: 'fas fa-history',
+                title: currentLanguage === 'en' ? 'Patient History' : 'ប្រវត្តិអ្នកជំងឺ',
+                form: getPatientHistoryPanel(data)
+            };
+        }
+        return originalGetPanelConfig(type, data);
+    };
+    
+    function getPatientHistoryPanel(data) {
+        const { patient, appointments } = data;
+        
+        let appointmentsHtml = '';
+        if (appointments.length === 0) {
+            appointmentsHtml = `<div class="no-data">${currentLanguage === 'en' ? 'No appointment history' : 'គ្មានប្រវត្តិការណាត់ជួប'}</div>`;
+        } else {
+            appointments.sort((a, b) => new Date(b.dateStart) - new Date(a.dateStart));
+            appointments.forEach(apt => {
+                const statusClass = apt.type;
+                appointmentsHtml += `
+                    <div class="history-item ${statusClass}">
+                        <div class="history-date">${apt.dateStart}</div>
+                        <div class="history-title">${apt.title}</div>
+                        <div class="history-provider">${apt.providerName}</div>
+                        <span class="appointment-type-badge ${apt.type}">${apt.type}</span>
+                    </div>
+                `;
+            });
+        }
+        
+        return `
+            <div class="patient-history-panel">
+                <div class="patient-info-card">
+                    <div class="patient-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="patient-details">
+                        <h3>${patient.name}</h3>
+                        <p><i class="fas fa-phone"></i> ${patient.phone}</p>
+                        <p><i class="fas fa-${patient.gender === 'male' ? 'mars' : 'venus'}"></i> ${patient.gender}</p>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i class="fas fa-calendar-alt"></i>
+                        ${currentLanguage === 'en' ? 'Appointment History' : 'ប្រវត្តិការណាត់ជួប'}
+                        <span class="history-count">${appointments.length}</span>
+                    </div>
+                    <div class="history-list">
+                        ${appointmentsHtml}
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeSlidePanel()">
+                        ${currentLanguage === 'en' ? 'Close' : 'បិទ'}
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="openSlidePanel('appointment'); $('#patientId').val(${patient.id});">
+                        <i class="fas fa-plus"></i>
+                        ${currentLanguage === 'en' ? 'New Appointment' : 'ការណាត់ជួបថ្មី'}
+                    </button>
+                </div>
+            </div>
+        `;
+    }
     
     console.log('🔄 Initializing calendar...');
     console.log('📅 Calendar body element:', $('#calendarBody').length);

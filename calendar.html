@@ -15,7 +15,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Custom Styles -->
-    <link rel="stylesheet" href="styles.css?v=5">
+    <link rel="stylesheet" href="styles.css?v=13">
 </head>
 <body>
     <!-- Header -->
@@ -31,9 +31,34 @@
                 <i class="fas fa-chevron-right"></i>
             </button>
             <h1 class="header-title" id="headerTitle"></h1>
+            
+            <div class="lunar-info" id="lunarInfo"></div>
         </div>
         <div class="header-info">
-            <div class="lunar-info" id="lunarInfo"></div>
+            <!-- Search Box -->
+            <div class="search-wrapper">
+                <div class="search-box">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" class="search-input" id="globalSearch" placeholder="Search patients, appointments...">
+                    <button class="search-clear" id="searchClear" style="display: none;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="search-results" id="searchResults"></div>
+            </div>
+            
+            <!-- View Toggle -->
+            <div class="view-toggle">
+                <button class="view-btn active" id="viewCalendar" title="Calendar View">
+                    <i class="fas fa-calendar-alt"></i>
+                </button>
+                <button class="view-btn" id="viewTimeline" title="Timeline View">
+                    <i class="fas fa-clock"></i>
+                </button>
+                <button class="view-btn" id="viewDashboard" title="Dashboard">
+                    <i class="fas fa-chart-pie"></i>
+                </button>
+            </div>
             
             <!-- Quick Action Dropdown -->
             <div class="quick-action-wrapper">
@@ -87,8 +112,109 @@
 
     <!-- Main Container -->
     <div class="calendar-container">
+        <!-- Dashboard Section (hidden by default) -->
+        <div class="dashboard-section" id="dashboardSection" style="display: none;">
+            <div class="dashboard-content">
+                <!-- Stats Cards -->
+                <div class="stats-row">
+                    <div class="stat-card stat-total">
+                        <div class="stat-icon"><i class="fas fa-calendar-check"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-number" id="statTotal">0</div>
+                            <div class="stat-label">Today's Appointments</div>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-waiting">
+                        <div class="stat-icon"><i class="fas fa-users"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-number" id="statWaiting">0</div>
+                            <div class="stat-label">In Queue</div>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-completed">
+                        <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-number" id="statCompleted">0</div>
+                            <div class="stat-label">Completed</div>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-cancelled">
+                        <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-number" id="statCancelled">0</div>
+                            <div class="stat-label">Cancelled</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Dashboard Grid -->
+                <div class="dashboard-grid">
+                    <!-- Next Upcoming -->
+                    <div class="dashboard-card">
+                        <div class="dashboard-card-header">
+                            <i class="fas fa-bell"></i>
+                            <span>Next Upcoming</span>
+                        </div>
+                        <div class="dashboard-card-body" id="nextUpcoming">
+                            <div class="no-data">No upcoming appointments</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Waiting Queue -->
+                    <div class="dashboard-card">
+                        <div class="dashboard-card-header">
+                            <i class="fas fa-hourglass-half"></i>
+                            <span>Waiting Queue</span>
+                        </div>
+                        <div class="dashboard-card-body" id="waitingQueue">
+                            <div class="no-data">No patients waiting</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Provider Status -->
+                    <div class="dashboard-card">
+                        <div class="dashboard-card-header">
+                            <i class="fas fa-user-md"></i>
+                            <span>Provider Status</span>
+                        </div>
+                        <div class="dashboard-card-body" id="providerStatus">
+                            <div class="no-data">Loading...</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Activity -->
+                    <div class="dashboard-card">
+                        <div class="dashboard-card-header">
+                            <i class="fas fa-history"></i>
+                            <span>Recent Activity</span>
+                        </div>
+                        <div class="dashboard-card-body" id="recentActivity">
+                            <div class="no-data">No recent activity</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Timeline Section (hidden by default) -->
+        <div class="timeline-section" id="timelineSection" style="display: none;">
+            <div class="timeline-header">
+                <button class="timeline-nav-btn" id="timelinePrev">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <h2 class="timeline-date" id="timelineDate">Today</h2>
+                <button class="timeline-nav-btn" id="timelineNext">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+                <button class="timeline-today-btn" id="timelineToday">Today</button>
+            </div>
+            <div class="timeline-grid" id="timelineGrid">
+                <!-- Timeline will be rendered here -->
+            </div>
+        </div>
+        
         <!-- Calendar Section -->
-        <div class="calendar-main">
+        <div class="calendar-main" id="calendarMain">
             <!-- Weekdays Header -->
             <div class="calendar-weekdays-row">
                 <div class="weekday-cell" id="weekday0"></div>
@@ -105,7 +231,7 @@
         </div>
 
         <!-- Appointments Sidebar -->
-        <div class="appointments-sidebar">
+        <div class="appointments-sidebar" id="appointmentsSidebar">
             <div class="sidebar-header">
                 <div class="sidebar-title" id="sidebarTitle">Appointments</div>
                 <div class="sidebar-date-info" id="sidebarDateInfo"></div>
@@ -183,6 +309,6 @@
     <script src="https://cdn.jsdelivr.net/gh/ThyrithSor/momentkh@3.0.3/momentkh.js"></script>
     
     <!-- Custom Script -->
-    <script src="script.js?v=4"></script>
+    <script src="script.js?v=5"></script>
 </body>
 </html>
