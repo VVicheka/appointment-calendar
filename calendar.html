@@ -1,22 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Appointment Calendar</title>
-    
+
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
+
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <!-- Kantumruy Pro Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
     <!-- Custom Styles -->
     <link rel="stylesheet" href="styles.css?v=13">
 </head>
+
 <body>
     <!-- Header -->
     <div class="calendar-header-bar">
@@ -31,7 +34,7 @@
                 <i class="fas fa-chevron-right"></i>
             </button>
             <h1 class="header-title" id="headerTitle"></h1>
-            
+
             <div class="lunar-info" id="lunarInfo"></div>
         </div>
         <div class="header-info">
@@ -39,14 +42,41 @@
             <div class="search-wrapper">
                 <div class="search-box">
                     <i class="fas fa-search search-icon"></i>
-                    <input type="text" class="search-input" id="globalSearch" placeholder="Search patients, appointments...">
+                    <input type="text" class="search-input" id="globalSearch" placeholder="Search...">
                     <button class="search-clear" id="searchClear" style="display: none;">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
+                <div class="search-filters" id="searchFilters">
+                    <button class="search-filter-chip active" data-filter="all">
+                        <i class="fas fa-th-large"></i>
+                        <span>All</span>
+                        <span class="filter-count"></span>
+                    </button>
+                    <button class="search-filter-chip" data-filter="appointments">
+                        <i class="fas fa-calendar-check"></i>
+                        <span>Appointments</span>
+                        <span class="filter-count"></span>
+                    </button>
+                    <button class="search-filter-chip" data-filter="patients">
+                        <i class="fas fa-user"></i>
+                        <span>Patients</span>
+                        <span class="filter-count"></span>
+                    </button>
+                    <button class="search-filter-chip" data-filter="queue">
+                        <i class="fas fa-list-ul"></i>
+                        <span>Queue</span>
+                        <span class="filter-count"></span>
+                    </button>
+                    <button class="search-filter-chip" data-filter="followup">
+                        <i class="fas fa-redo"></i>
+                        <span>Follow-up</span>
+                        <span class="filter-count"></span>
+                    </button>
+                </div>
                 <div class="search-results" id="searchResults"></div>
             </div>
-            
+
             <!-- View Toggle -->
             <div class="view-toggle">
                 <button class="view-btn active" id="viewCalendar" title="Calendar View">
@@ -59,7 +89,7 @@
                     <i class="fas fa-chart-pie"></i>
                 </button>
             </div>
-            
+
             <!-- Quick Action Dropdown -->
             <div class="quick-action-wrapper">
                 <button class="quick-action-btn" id="quickActionBtn" aria-label="Quick Actions" aria-expanded="false">
@@ -77,11 +107,13 @@
                         </button>
                         <button class="quick-action-item" data-action="appointment" data-permission="staff">
                             <i class="fas fa-calendar-plus"></i>
-                            <span class="action-label" data-en="New Appointment" data-kh="ការណាត់ជួបថ្មី">New Appointment</span>
+                            <span class="action-label" data-en="New Appointment" data-kh="ការណាត់ជួបថ្មី">New
+                                Appointment</span>
                         </button>
                         <button class="quick-action-item" data-action="lab-order" data-permission="clinical">
                             <i class="fas fa-flask"></i>
-                            <span class="action-label" data-en="New Lab Order" data-kh="សំណើមន្ទីរពិសោធន៍">New Lab Order</span>
+                            <span class="action-label" data-en="New Lab Order" data-kh="សំណើមន្ទីរពិសោធន៍">New Lab
+                                Order</span>
                         </button>
                         <button class="quick-action-item" data-action="payment" data-permission="staff">
                             <i class="fas fa-dollar-sign"></i>
@@ -93,7 +125,8 @@
                         </button>
                         <button class="quick-action-item" data-action="prescription" data-permission="clinical">
                             <i class="fas fa-prescription"></i>
-                            <span class="action-label" data-en="New Prescription" data-kh="វេជ្ជបញ្ជាថ្មី">New Prescription</span>
+                            <span class="action-label" data-en="New Prescription" data-kh="វេជ្ជបញ្ជាថ្មី">New
+                                Prescription</span>
                         </button>
                         <button class="quick-action-item" data-action="services" data-permission="staff">
                             <i class="fas fa-hand-holding-medical"></i>
@@ -102,7 +135,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="lang-toggle" id="langToggle">
                 <span class="lang-flag">🇬🇧</span>
                 <span id="langText">English</span>
@@ -118,17 +151,19 @@
                 <!-- Stats Cards -->
                 <div class="stats-row">
                     <div class="stat-card stat-total">
-                        <div class="stat-icon"><i class="fas fa-calendar-check"></i></div>
+                        <div class="stat-icon"><i class="fas fa-calendar-day"></i></div>
                         <div class="stat-info">
                             <div class="stat-number" id="statTotal">0</div>
                             <div class="stat-label">Today's Appointments</div>
+                            <div class="stat-trend" id="statTotalTrend"></div>
                         </div>
                     </div>
-                    <div class="stat-card stat-waiting">
-                        <div class="stat-icon"><i class="fas fa-users"></i></div>
+                    <div class="stat-card stat-followup">
+                        <div class="stat-icon"><i class="fas fa-redo-alt"></i></div>
                         <div class="stat-info">
-                            <div class="stat-number" id="statWaiting">0</div>
-                            <div class="stat-label">In Queue</div>
+                            <div class="stat-number" id="statFollowup">0</div>
+                            <div class="stat-label">Follow-up</div>
+                            <div class="stat-trend" id="statFollowupTrend"></div>
                         </div>
                     </div>
                     <div class="stat-card stat-completed">
@@ -136,83 +171,202 @@
                         <div class="stat-info">
                             <div class="stat-number" id="statCompleted">0</div>
                             <div class="stat-label">Completed</div>
+                            <div class="stat-trend" id="statCompletedTrend"></div>
                         </div>
                     </div>
-                    <div class="stat-card stat-cancelled">
-                        <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
+                    <div class="stat-card stat-revenue">
+                        <div class="stat-icon"><i class="fas fa-dollar-sign"></i></div>
                         <div class="stat-info">
-                            <div class="stat-number" id="statCancelled">0</div>
-                            <div class="stat-label">Cancelled</div>
+                            <div class="stat-number" id="statRevenue">$0</div>
+                            <div class="stat-label">Revenue</div>
+                            <div class="stat-trend" id="statRevenueTrend"></div>
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Dashboard Grid -->
                 <div class="dashboard-grid">
-                    <!-- Next Upcoming -->
+                    <!-- Now Serving -->
                     <div class="dashboard-card">
                         <div class="dashboard-card-header">
-                            <i class="fas fa-bell"></i>
-                            <span>Next Upcoming</span>
+                            <i class="fas fa-user-clock"></i>
+                            <span>🟢 Now Serving</span>
                         </div>
                         <div class="dashboard-card-body" id="nextUpcoming">
-                            <div class="no-data">No upcoming appointments</div>
+                            <div class="no-data">No patients in treatment</div>
                         </div>
                     </div>
-                    
-                    <!-- Waiting Queue -->
+
+                    <!-- Ready to See -->
                     <div class="dashboard-card">
                         <div class="dashboard-card-header">
-                            <i class="fas fa-hourglass-half"></i>
-                            <span>Waiting Queue</span>
+                            <i class="fas fa-clipboard-list"></i>
+                            <span>Ready to See</span>
                         </div>
                         <div class="dashboard-card-body" id="waitingQueue">
                             <div class="no-data">No patients waiting</div>
                         </div>
                     </div>
-                    
+
                     <!-- Provider Status -->
                     <div class="dashboard-card">
                         <div class="dashboard-card-header">
                             <i class="fas fa-user-md"></i>
                             <span>Provider Status</span>
+                            <button class="provider-filter-btn" id="providerFilterBtn" onclick="toggleProviderFilter()">
+                                <i class="fas fa-filter"></i> Filter
+                            </button>
                         </div>
-                        <div class="dashboard-card-body" id="providerStatus">
+                        <div class="provider-filter-dropdown" id="providerFilterDropdown" style="display: none;">
+                            <label class="provider-filter-option">
+                                <input type="checkbox" value="all" checked onchange="filterProviderStatus()">
+                                <span>Show All</span>
+                            </label>
+                            <label class="provider-filter-option">
+                                <input type="checkbox" class="provider-status-filter" value="available" checked
+                                    onchange="filterProviderStatus()">
+                                <span>🟢 Available</span>
+                            </label>
+                            <label class="provider-filter-option">
+                                <input type="checkbox" class="provider-status-filter" value="busy" checked
+                                    onchange="filterProviderStatus()">
+                                <span>🔴 Busy</span>
+                            </label>
+                            <label class="provider-filter-option">
+                                <input type="checkbox" class="provider-status-filter" value="off"
+                                    onchange="filterProviderStatus()">
+                                <span>⚪ Off Duty</span>
+                            </label>
+                        </div>
+                        <div class="dashboard-card-body" id="providerStatusList">
                             <div class="no-data">Loading...</div>
                         </div>
                     </div>
-                    
+
+                    <!-- Coming Soon -->
+                    <div class="dashboard-card">
+                        <div class="dashboard-card-header">
+                            <i class="fas fa-clock"></i>
+                            <span>Coming Soon (Next 2 Hours)</span>
+                        </div>
+                        <div class="dashboard-card-body" id="comingSoonList">
+                            <div class="no-data">Loading...</div>
+                        </div>
+                    </div>
+
+                    <!-- Needs Follow-up -->
+                    <div class="dashboard-card">
+                        <div class="dashboard-card-header">
+                            <i class="fas fa-calendar-plus"></i>
+                            <span>⚠️ Needs Follow-up</span>
+                        </div>
+                        <div class="dashboard-card-body" id="followupList">
+                            <div class="no-data">No follow-ups needed</div>
+                        </div>
+                    </div>
+
                     <!-- Recent Activity -->
                     <div class="dashboard-card">
                         <div class="dashboard-card-header">
                             <i class="fas fa-history"></i>
                             <span>Recent Activity</span>
                         </div>
-                        <div class="dashboard-card-body" id="recentActivity">
+                        <div class="dashboard-card-body" id="recentActivityList">
                             <div class="no-data">No recent activity</div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        
+
         <!-- Timeline Section (hidden by default) -->
         <div class="timeline-section" id="timelineSection" style="display: none;">
-            <div class="timeline-header">
-                <button class="timeline-nav-btn" id="timelinePrev">
-                    <i class="fas fa-chevron-left"></i>
-                </button>
-                <h2 class="timeline-date" id="timelineDate">Today</h2>
-                <button class="timeline-nav-btn" id="timelineNext">
-                    <i class="fas fa-chevron-right"></i>
-                </button>
-                <button class="timeline-today-btn" id="timelineToday">Today</button>
+            <!-- Timeline Toolbar -->
+            <div class="timeline-toolbar">
+                <div class="timeline-toolbar-left">
+                    <button class="timeline-nav-btn" id="timelinePrev">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <h2 class="timeline-date" id="timelineDate">Today</h2>
+                    <button class="timeline-nav-btn" id="timelineNext">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                    <button class="timeline-today-btn" id="timelineToday">
+                        <i class="fas fa-calendar-day"></i>
+                        Today
+                    </button>
+                </div>
+
+                <div class="timeline-toolbar-right">
+                    <!-- View Mode Pills -->
+                    <div class="timeline-view-pills">
+                        <button class="view-pill active" data-mode="multi" onclick="switchTimelineMode('multi')"
+                            title="Multi-provider view">
+                            <i class="fas fa-th"></i>
+                            <span>Multi</span>
+                        </button>
+                        <button class="view-pill" data-mode="focus" onclick="switchTimelineMode('focus')"
+                            title="Focus view">
+                            <i class="fas fa-user-md"></i>
+                            <span>Focus</span>
+                        </button>
+                        <button class="view-pill" data-mode="compact" onclick="switchTimelineMode('compact')"
+                            title="Compact view">
+                            <i class="fas fa-grip-horizontal"></i>
+                            <span>Compact</span>
+                        </button>
+
+                        <!-- Provider Drawer Toggle as Pill -->
+                        <button class="view-pill provider-pill" id="providerDrawerToggle"
+                            onclick="toggleProviderDrawer()" title="Select providers">
+                            <i class="fas fa-users"></i>
+                            <span>Providers</span>
+                            <span class="provider-count-badge" id="providerCountBadge">4</span>
+                        </button>
+                    </div>
+                </div>
             </div>
-            <div class="timeline-grid" id="timelineGrid">
-                <!-- Timeline will be rendered here -->
+
+            <!-- Timeline Content -->
+            <div class="timeline-content-wrapper">
+                <div class="timeline-grid" id="timelineGrid">
+                    <!-- Timeline will be rendered here -->
+                </div>
+
+                <!-- Provider Drawer (Sidebar) -->
+                <div class="provider-drawer" id="providerDrawer">
+                    <div class="provider-drawer-header">
+                        <h3>
+                            <i class="fas fa-user-md"></i>
+                            Select Providers
+                        </h3>
+                        <button class="drawer-close-btn" onclick="toggleProviderDrawer()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <div class="provider-drawer-actions">
+                        <button class="drawer-action-btn" onclick="selectAllProviders()">
+                            <i class="fas fa-check-double"></i> Select All
+                        </button>
+                        <button class="drawer-action-btn" onclick="clearAllProviders()">
+                            <i class="fas fa-times-circle"></i> Clear All
+                        </button>
+                    </div>
+
+                    <div class="provider-drawer-search">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Search providers..." id="providerSearchInput"
+                            onkeyup="filterProviderList()">
+                    </div>
+
+                    <div class="provider-drawer-list" id="providerDrawerList">
+                        <!-- Provider cards will be rendered here -->
+                    </div>
+                </div>
             </div>
         </div>
-        
+
         <!-- Calendar Section -->
         <div class="calendar-main" id="calendarMain">
             <!-- Weekdays Header -->
@@ -225,7 +379,7 @@
                 <div class="weekday-cell" id="weekday5"></div>
                 <div class="weekday-cell" id="weekday6"></div>
             </div>
-            
+
             <!-- Calendar Body -->
             <div class="calendar-body" id="calendarBody"></div>
         </div>
@@ -236,7 +390,7 @@
                 <div class="sidebar-title" id="sidebarTitle">Appointments</div>
                 <div class="sidebar-date-info" id="sidebarDateInfo"></div>
             </div>
-            
+
             <!-- Filters Section -->
             <div class="appointment-filters">
                 <div class="filter-row">
@@ -250,34 +404,44 @@
                     </select>
                 </div>
                 <div class="filter-types">
-                    <label class="filter-checkbox type-appointment">
-                        <input type="checkbox" class="filter-type" value="appointment" checked>
+                    <label class="filter-checkbox">
+                        <input type="checkbox" class="filter-type" value="scheduled" checked>
                         <span class="checkmark" style="background-color: #3b82f6;"></span>
-                        <span class="filter-label">Appointment</span>
+                        <span class="filter-label">Scheduled</span>
                     </label>
-                    <label class="filter-checkbox type-followup">
-                        <input type="checkbox" class="filter-type" value="followup" checked>
+                    <label class="filter-checkbox">
+                        <input type="checkbox" class="filter-type" value="arrived" checked>
+                        <span class="checkmark" style="background-color: #8b5cf6;"></span>
+                        <span class="filter-label">Arrived</span>
+                    </label>
+                    <label class="filter-checkbox">
+                        <input type="checkbox" class="filter-type" value="ready" checked>
                         <span class="checkmark" style="background-color: #f59e0b;"></span>
-                        <span class="filter-label">Follow Up</span>
+                        <span class="filter-label">Ready</span>
                     </label>
-                    <label class="filter-checkbox type-queue">
-                        <input type="checkbox" class="filter-type" value="queue" checked>
-                        <span class="checkmark" style="background-color: #06b6d4;"></span>
-                        <span class="filter-label">Queue</span>
-                    </label>
-                    <label class="filter-checkbox type-finished">
-                        <input type="checkbox" class="filter-type" value="finished" checked>
+                    <label class="filter-checkbox">
+                        <input type="checkbox" class="filter-type" value="in-treatment" checked>
                         <span class="checkmark" style="background-color: #22c55e;"></span>
-                        <span class="filter-label">Finished</span>
+                        <span class="filter-label">In Treatment</span>
                     </label>
-                    <label class="filter-checkbox type-cancelled">
-                        <input type="checkbox" class="filter-type" value="cancelled" checked>
+                    <label class="filter-checkbox">
+                        <input type="checkbox" class="filter-type" value="completed" checked>
+                        <span class="checkmark" style="background-color: #10b981;"></span>
+                        <span class="filter-label">Completed</span>
+                    </label>
+                    <label class="filter-checkbox">
+                        <input type="checkbox" class="filter-type" value="needs-followup" checked>
+                        <span class="checkmark" style="background-color: #f97316;"></span>
+                        <span class="filter-label">Needs Follow-up</span>
+                    </label>
+                    <label class="filter-checkbox">
+                        <input type="checkbox" class="filter-type" value="cancelled">
                         <span class="checkmark" style="background-color: #ef4444;"></span>
                         <span class="filter-label">Cancelled</span>
                     </label>
                 </div>
             </div>
-            
+
             <div id="appointmentsList" class="appointments-list"></div>
         </div>
     </div>
@@ -301,14 +465,15 @@
 
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <!-- MomentKH Library -->
     <script src="https://cdn.jsdelivr.net/gh/ThyrithSor/momentkh@3.0.3/momentkh.js"></script>
-    
+
     <!-- Custom Script -->
     <script src="script.js?v=5"></script>
 </body>
+
 </html>
