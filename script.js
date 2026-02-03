@@ -715,9 +715,54 @@ $(document).ready(function () {
         // Get filtered appointments
         const filteredAppointments = getFilteredAppointments();
 
+        // Calculate daily summary
+        const totalCount = filteredAppointments.length;
+        const completedCount = filteredAppointments.filter(apt => apt.type === 'completed').length;
+        const scheduledCount = filteredAppointments.filter(apt => apt.type === 'scheduled').length;
+        const cancelledCount = filteredAppointments.filter(apt => apt.type === 'cancelled').length;
+
         let html = '';
+
+        // Add compact daily summary (only if there are appointments)
+        if (filteredAppointments.length > 0) {
+            html += `
+                <div class="daily-summary-compact">
+                    <div class="summary-item">
+                        <span class="summary-label">Total:</span>
+                        <span class="summary-value">${totalCount}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Scheduled:</span>
+                        <span class="summary-value">${scheduledCount}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Completed:</span>
+                        <span class="summary-value">${completedCount}</span>
+                    </div>
+                    ${cancelledCount > 0 ? `
+                    <div class="summary-item">
+                        <span class="summary-label">Cancelled:</span>
+                        <span class="summary-value">${cancelledCount}</span>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
         if (filteredAppointments.length === 0) {
-            html = `<div class="no-appointments">${currentLanguage === 'en' ? 'No appointments found' : 'រកមិនឃើញការណាត់ជួប'}</div>`;
+            html += `
+                <div class="no-appointments-state">
+                    <div class="no-appointments-icon">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="no-appointments-title">
+                        ${currentLanguage === 'en' ? 'No Appointments' : 'គ្មានការណាត់ជួប'}
+                    </div>
+                    <div class="no-appointments-text">
+                        ${currentLanguage === 'en' ? 'No appointments found for the selected criteria' : 'រកមិនឃើញការណាត់ជួបសម្រាប់លក្ខណៈវិនិច្ឆ័យដែលបានជ្រើសរើស'}
+                    </div>
+                </div>
+            `;
         } else {
             // Group by provider (doctor)
             const grouped = {};
@@ -738,14 +783,26 @@ $(document).ready(function () {
             Object.keys(grouped).forEach(providerId => {
                 const provider = mockProviders.find(p => p.id == providerId);
                 const providerName = provider ? provider.name : 'Unknown Provider';
+                const providerSpecialty = provider ? provider.specialty : '';
                 const appointments = grouped[providerId];
 
+                // Calculate time range for this provider
+                const times = appointments.map(apt => apt.dateStart.split(' ')[1]);
+                const firstTime = times[0];
+                const lastTime = times[times.length - 1];
+
                 html += `<div class="appointment-date-group">`;
-                html += `<div class="provider-group-header provider-${providerId}">
-                    <i class="fas fa-user-md"></i>
-                    <span>${providerName}</span>
-                    <span class="provider-count-badge">${appointments.length}</span>
-                </div>`;
+                html += `
+                    <div class="provider-group-header provider-${providerId}">
+                        <div class="provider-header-main">
+                            <i class="fas fa-user-md"></i>
+                            <div class="provider-header-info">
+                                <div class="provider-header-name">${providerName}</div>
+                                <div class="provider-header-meta">${appointments.length} appointments · ${firstTime} - ${lastTime}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
 
                 appointments.forEach(apt => {
                     const timeStart = apt.dateStart.split(' ')[1] || '';
@@ -756,19 +813,42 @@ $(document).ready(function () {
                     const dayNum = aptDate.getDate();
                     const monthName = translations[currentLanguage].months[aptDate.getMonth()];
 
+                    // Status badge text
+                    const statusLabels = {
+                        'scheduled': 'Scheduled',
+                        'arrived': 'Arrived',
+                        'ready': 'Ready',
+                        'in-treatment': 'In Treatment',
+                        'completed': 'Completed',
+                        'needs-followup': 'Follow-up',
+                        'walk-in': 'Walk-in',
+                        'no-show': 'No-show',
+                        'cancelled': 'Cancelled'
+                    };
+                    const statusLabel = statusLabels[apt.type] || apt.type;
+
                     html += `
-                        <div class="appointment-item provider-${apt.providerId} ${apt.type === 'cancelled' ? 'type-cancelled' : ''}" onclick="editAppointment(${apt.id})">
-                            <div class="appointment-patient">${apt.patientName}</div>
-                            <div class="appointment-details">
-                                <span><i class="fas fa-calendar"></i> ${dayName}, ${dayNum} ${monthName}</span>
-                                <span><i class="fas fa-clock"></i> ${timeStart} - ${timeEnd}</span>
-                                <span><i class="fas fa-door-open"></i> Room ${apt.roomNumber}</span>
+                        <div class="appointment-item provider-${apt.providerId} status-${apt.type}" onclick="editAppointment(${apt.id})">
+                            <div class="appointment-item-header">
+                                <div class="appointment-patient-name">${apt.patientName}</div>
+                                <span class="appointment-status-badge badge-${apt.type}">${statusLabel}</span>
                             </div>
-                            <div class="appointment-footer">
-                                <span class="appointment-type-badge ${apt.type}">${apt.type}</span>
-                                <div class="appointment-quick-actions">
-                                    ${getQuickActionButtons(apt)}
-                                </div>
+                            <div class="appointment-item-details">
+                                <span class="appointment-time">${timeStart} - ${timeEnd}</span>
+                                <span class="appointment-detail-divider">·</span>
+                                <span>${dayName}, ${dayNum} ${monthName}</span>
+                                <span class="appointment-detail-divider">·</span>
+                                <span>Room ${apt.roomNumber}</span>
+                            </div>
+                            <div class="appointment-hover-actions">
+                                <button class="action-btn action-complete" onclick="event.stopPropagation(); quickStatusChange(${apt.id}, 'completed')" title="Mark as Completed">
+                                    <i class="fas fa-check"></i>
+                                    <span>Complete</span>
+                                </button>
+                                <button class="action-btn action-cancel" onclick="event.stopPropagation(); quickStatusChange(${apt.id}, 'cancelled')" title="Cancel Appointment">
+                                    <i class="fas fa-times"></i>
+                                    <span>Cancel</span>
+                                </button>
                             </div>
                         </div>
                     `;
@@ -2063,7 +2143,11 @@ $(document).ready(function () {
     });
 
     function handleQuickAction(action) {
-        openSlidePanel(action);
+        if (action === 'daily-report') {
+            openDailyReportPanel();
+        } else {
+            openSlidePanel(action);
+        }
     }
 
     // Language Toggle
@@ -3036,10 +3120,49 @@ $(document).ready(function () {
             timelineSelectedProviders.includes(p.id)
         );
 
-        // UX Pattern: Adjust column count based on view mode
-        const maxColumns = timelineViewMode === 'focus' ? 1 :
-            timelineViewMode === 'compact' ? 6 : 3;
-        const displayProviders = visibleProviders.slice(0, maxColumns);
+        // UX Pattern: Different display logic based on view mode
+        let displayProviders;
+
+        if (timelineViewMode === 'focus') {
+            // Focus view: Require exactly ONE provider selected
+            if (visibleProviders.length === 0) {
+                $('#timelineGrid').html(`
+                    <div class="timeline-empty-state">
+                        <i class="fas fa-user-md"></i>
+                        <p>Focus mode requires one provider</p>
+                        <p style="font-size: 0.9rem; color: #6b7280; margin-top: 0.5rem;">
+                            Please select a provider from the provider list
+                        </p>
+                        <button class="btn btn-primary" onclick="toggleProviderDrawer()">
+                            <i class="fas fa-users"></i> Select Provider
+                        </button>
+                    </div>
+                `);
+                return;
+            }
+
+            if (visibleProviders.length > 1) {
+                $('#timelineGrid').html(`
+                    <div class="timeline-empty-state">
+                        <i class="fas fa-user-md"></i>
+                        <p>Focus mode: Select only ONE provider</p>
+                        <p style="font-size: 0.9rem; color: #6b7280; margin-top: 0.5rem;">
+                            You have ${visibleProviders.length} providers selected. Focus mode shows one provider at a time.
+                        </p>
+                        <button class="btn btn-primary" onclick="toggleProviderDrawer()">
+                            <i class="fas fa-users"></i> Adjust Selection
+                        </button>
+                    </div>
+                `);
+                return;
+            }
+
+            // Show the single selected provider
+            displayProviders = visibleProviders;
+        } else {
+            // Multi and Compact view: Show all selected providers (up to 10)
+            displayProviders = visibleProviders.slice(0, 10);
+        }
 
         if (displayProviders.length === 0) {
             $('#timelineGrid').html(`
@@ -3054,33 +3177,74 @@ $(document).ready(function () {
             return;
         }
 
-        // Build timeline grid
-        let html = '';
+        // Set view mode class on grid
+        const viewModeClass = `timeline-mode-${timelineViewMode}`;
 
-        // Provider columns header
-        html += `<div class="timeline-providers-header" style="grid-template-columns: 80px repeat(${displayProviders.length}, 1fr);">`;
+        // Build timeline with horizontal scroll structure
+        let html = `<div class="timeline-scroll-container ${viewModeClass}">`;
+
+        // Sticky time column
+        html += '<div class="timeline-time-column">';
         html += '<div class="timeline-time-header">Time</div>';
-        displayProviders.forEach(provider => {
-            const providerApts = dayAppointments.filter(apt => apt.providerId === provider.id);
-            const busySlots = providerApts.filter(apt => apt.type === 'in-treatment' || apt.type === 'arrived').length;
-            const totalSlots = providerApts.length;
 
-            html += `<div class="timeline-provider-header" style="border-top: 3px solid ${provider.color}">
-                <div class="timeline-provider-name">${provider.name.split(' ').pop()}</div>
-                <div class="timeline-provider-stats">${totalSlots} apts</div>
-                ${timelineViewMode === 'focus' ? `<div class="timeline-provider-specialty">${provider.specialty}</div>` : ''}
-            </div>`;
-        });
-        html += '</div>';
-
-        // Time slots (7 AM to 7 PM)
+        // Collect time slots to display
+        const timeSlots = [];
         for (let hour = 7; hour <= 19; hour++) {
             const timeStr = `${hour.toString().padStart(2, '0')}:00`;
             const nowHour = today.getHours();
             const isCurrentHour = isToday && hour === nowHour;
 
-            html += `<div class="timeline-row ${isCurrentHour ? 'current-hour' : ''}" style="grid-template-columns: 80px repeat(${displayProviders.length}, 1fr);">`;
-            html += `<div class="timeline-time">${timeStr}</div>`;
+            // In compact mode, only include hours with appointments
+            if (timelineViewMode === 'compact') {
+                const hasAppointments = displayProviders.some(provider => {
+                    return dayAppointments.some(apt => {
+                        const aptHour = parseInt(apt.dateStart.split(' ')[1].split(':')[0]);
+                        return apt.providerId === provider.id && aptHour === hour;
+                    });
+                });
+
+                if (hasAppointments) {
+                    timeSlots.push({ hour, timeStr, isCurrentHour });
+                }
+            } else {
+                // Multi and Focus: show all hours
+                timeSlots.push({ hour, timeStr, isCurrentHour });
+            }
+        }
+
+        // Render time cells
+        timeSlots.forEach(slot => {
+            html += `<div class="timeline-time-cell ${slot.isCurrentHour ? 'current-hour' : ''}">${slot.timeStr}</div>`;
+        });
+        html += '</div>'; // end time column
+
+        // Scrollable providers container
+        html += '<div class="timeline-providers-scroll">';
+
+        // Providers header row
+        html += '<div class="timeline-providers-header-row">';
+        displayProviders.forEach(provider => {
+            const providerApts = dayAppointments.filter(apt => apt.providerId === provider.id);
+            const totalSlots = providerApts.length;
+
+            html += `<div class="timeline-provider-column-header" style="border-top: 3px solid ${provider.color}">
+                <div class="timeline-provider-name">${provider.name.split(' ').pop()}</div>
+                <div class="timeline-provider-stats">${totalSlots} apts</div>
+                ${timelineViewMode === 'focus' ? `<div class="timeline-provider-specialty">${provider.specialty}</div>` : ''}
+            </div>`;
+        });
+        html += '</div>'; // end providers header row
+
+        // Providers content rows
+        html += '<div class="timeline-providers-rows">';
+
+        // Use the same time slots array for consistency
+        timeSlots.forEach(slot => {
+            const hour = slot.hour;
+            const timeStr = slot.timeStr;
+            const isCurrentHour = slot.isCurrentHour;
+
+            html += `<div class="timeline-providers-row ${isCurrentHour ? 'current-hour' : ''}">`;
 
             displayProviders.forEach(provider => {
                 const slotApts = dayAppointments.filter(apt => {
@@ -3090,7 +3254,7 @@ $(document).ready(function () {
 
                 // UX: Empty slot is clickable for quick booking
                 const isEmptySlot = slotApts.length === 0;
-                html += `<div class="timeline-slot ${isEmptySlot ? 'empty-slot' : ''}" 
+                html += `<div class="timeline-provider-slot ${isEmptySlot ? 'empty-slot' : ''}" 
                          data-provider="${provider.id}" 
                          data-time="${timeStr}" 
                          data-date="${dateKey}"
@@ -3118,11 +3282,15 @@ $(document).ready(function () {
                     `;
                 });
 
-                html += '</div>';
+                html += '</div>'; // end provider slot
             });
 
-            html += '</div>';
-        }
+            html += '</div>'; // end providers row
+        });
+        html += '</div>'; // end providers rows
+
+        html += '</div>'; // end providers scroll
+        html += '</div>'; // end scroll container
 
         $('#timelineGrid').html(html);
     }
@@ -3668,6 +3836,137 @@ $(document).ready(function () {
             validateAppointmentForm();
         }
     });
+
+    // ====================
+    // DAILY REPORT FEATURE
+    // ====================
+
+    /**
+     * Store daily reports in memory (in production, this would be saved to database)
+     */
+    let dailyReports = JSON.parse(localStorage.getItem('calendar-daily-reports')) || [];
+    let currentDailyReport = null; // Current report being edited
+
+    /**
+     * Open Daily Report panel
+     */
+    // ===============================================
+    // DAILY REPORT - INVOICE STYLE
+    // ===============================================
+
+    window.openDailyReport = function () {
+        // Set today's date
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('reportDate').value = today;
+
+        // Show panel
+        document.getElementById('dailyReportPanel').classList.add('show');
+
+        // Load data
+        loadDailyReport();
+    };
+
+    window.closeDailyReport = function () {
+        document.getElementById('dailyReportPanel').classList.remove('show');
+    };
+
+    window.loadDailyReport = function () {
+        const tbody = document.getElementById('dailyReportBody');
+        const reportDate = document.getElementById('reportDate').value;
+        tbody.innerHTML = '';
+
+        // Filter appointments by date
+        const dateKey = reportDate;
+        const filteredAppointments = appointments.filter(apt =>
+            apt.dateStart.startsWith(dateKey)
+        );
+
+        let total = 0, completed = 0, cancelled = 0, revenue = 0;
+
+        filteredAppointments.forEach((apt, index) => {
+            total++;
+            if (apt.type === 'completed') completed++;
+            if (apt.type === 'cancelled') cancelled++;
+
+            // Calculate amount (mock calculation)
+            const amount = apt.type === 'completed' ? (Math.random() * 50 + 10).toFixed(0) : 0;
+            revenue += parseFloat(amount);
+
+            const provider = mockProviders.find(p => p.id == apt.providerId);
+            const providerName = provider ? provider.name.replace('Dr. ', '') : 'N/A';
+
+            const date = new Date(apt.dateStart.split(' ')[0]);
+            const dateFormatted = `${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}/${String(date.getFullYear()).slice(-2)}`;
+            const time = apt.dateStart.split(' ')[1].substring(0, 5);
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${dateFormatted}</td>
+                <td>${time}</td>
+                <td>${apt.patientName}</td>
+                <td>${providerName}</td>
+                <td>${apt.roomNumber}</td>
+                <td><span class="status-badge-${apt.type}">${apt.type}</span></td>
+                <td>${apt.treatment || 'General'}</td>
+                <td>$${amount}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        // Update summary
+        document.getElementById('sumAppointments').innerText = total;
+        document.getElementById('sumCompleted').innerText = completed;
+        document.getElementById('sumCancelled').innerText = cancelled;
+        document.getElementById('sumRevenue').innerText = '$' + revenue.toFixed(2);
+    };
+
+    window.openApprovalModal = function () {
+        document.getElementById('approvalModal').style.display = 'flex';
+    };
+
+    window.closeApprovalModal = function () {
+        document.getElementById('approvalModal').style.display = 'none';
+    };
+
+    window.confirmPrint = function () {
+        const comment = document.getElementById('approvalComment').value.trim();
+        if (!comment) {
+            alert('Approval comment is required');
+            document.getElementById('approvalComment').focus();
+            return;
+        }
+
+        // Close modal
+        closeApprovalModal();
+
+        // Save report data
+        const reportData = {
+            id: Date.now(),
+            date: document.getElementById('reportDate').value,
+            notes: document.getElementById('dailyReportNote').value,
+            approvedBy: document.getElementById('approvedBy').value || 'Not specified',
+            approvalComment: comment,
+            approvalDate: new Date().toLocaleString()
+        };
+
+        // Save to localStorage
+        let dailyReports = JSON.parse(localStorage.getItem('calendar-daily-reports') || '[]');
+        dailyReports.push(reportData);
+        localStorage.setItem('calendar-daily-reports', JSON.stringify(dailyReports));
+
+        // Print
+        window.print();
+    };
+
+    // Original panel function - now redirects to new dedicated panel
+    function openDailyReportPanel() {
+        openDailyReport();
+    }
+
+    // ===============================================
+    // END OF DAILY REPORT FUNCTIONS
+    // ===============================================
 
     // Update patient history panel config
     const originalGetPanelConfig = getPanelConfig;
