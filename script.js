@@ -3,20 +3,87 @@ $(document).ready(function () {
     let currentLanguage = localStorage.getItem('calendar-language') || 'en';
     let selectedDate = null; // Currently selected date for filtering
 
-    // Load appointments and validate/migrate old data
-    let storedAppointments = JSON.parse(localStorage.getItem('calendar-appointments')) || [];
-
-    // Filter out old format appointments that don't have dateStart
-    let appointments = storedAppointments.filter(apt => apt.dateStart);
-
-    // If we filtered out invalid data, save the clean version
-    if (appointments.length !== storedAppointments.length) {
-        console.log('🔧 Cleaned up old appointment data');
-        localStorage.setItem('calendar-appointments', JSON.stringify(appointments));
+    // Keep numbers in English format only
+    function formatNumber(num) {
+        return String(num);
     }
 
-    // Load payments from localStorage
-    let payments = JSON.parse(localStorage.getItem('calendar-payments')) || [];
+    // Load appointments from JSON file or localStorage
+    let appointments = [];
+    let payments = [];
+    let dataLoadedFromJson = false;
+
+    // Try to load from JSON file first
+    async function loadAppointmentsFromJson() {
+        try {
+            const response = await fetch('appointments.json');
+            if (response.ok) {
+                const data = await response.json();
+                appointments = data.appointments || [];
+                payments = data.payments || [];
+                dataLoadedFromJson = true;
+                console.log('✅ Loaded data from appointments.json:', appointments.length, 'appointments');
+
+                // Save to localStorage as backup
+                localStorage.setItem('calendar-appointments', JSON.stringify(appointments));
+                localStorage.setItem('calendar-payments', JSON.stringify(payments));
+
+                // Initialize the calendar after loading
+                initializeCalendar();
+            } else {
+                throw new Error('JSON file not found');
+            }
+        } catch (error) {
+            console.log('⚠️ Could not load from JSON, using localStorage:', error.message);
+            loadFromLocalStorage();
+        }
+    }
+
+    // Fallback to localStorage
+    function loadFromLocalStorage() {
+        let storedAppointments = JSON.parse(localStorage.getItem('calendar-appointments')) || [];
+
+        // Filter out old format appointments that don't have dateStart
+        appointments = storedAppointments.filter(apt => apt.dateStart);
+
+        // If we filtered out invalid data, save the clean version
+        if (appointments.length !== storedAppointments.length) {
+            console.log('🔧 Cleaned up old appointment data');
+            localStorage.setItem('calendar-appointments', JSON.stringify(appointments));
+        }
+
+        // Load payments from localStorage
+        payments = JSON.parse(localStorage.getItem('calendar-payments')) || [];
+
+        // Use sample data if empty
+        if (appointments.length === 0) {
+            useSampleData();
+        }
+
+        // Initialize the calendar
+        initializeCalendar();
+    }
+
+    // Sample data function
+    function useSampleData() {
+        appointments = [
+            {
+                id: 1,
+                patientId: 1,
+                patientName: 'Sokha Meas',
+                providerId: 1,
+                providerName: 'Dr. Sopheap Chhorn',
+                treatmentCategory: 'consultation',
+                roomNumber: 1,
+                title: 'Initial Consultation',
+                dateStart: '2026-02-04 08:00',
+                dateEnd: '2026-02-04 08:30',
+                type: 'scheduled',
+                notes: 'New patient registration'
+            }
+        ];
+        localStorage.setItem('calendar-appointments', JSON.stringify(appointments));
+    }
 
     // Mock data for patients and providers
     const mockPatients = [
@@ -34,7 +101,13 @@ $(document).ready(function () {
         { id: 1, name: 'Dr. Sopheap Chhorn', specialty: 'General Dentistry', color: '#8b5cf6' },
         { id: 2, name: 'Dr. Veasna Prak', specialty: 'Orthodontics', color: '#ec4899' },
         { id: 3, name: 'Dr. Kosal Mony', specialty: 'Oral Surgery', color: '#14b8a6' },
-        { id: 4, name: 'Dr. Sreyleak Tep', specialty: 'Pediatric Dentistry', color: '#f97316' }
+        { id: 4, name: 'Dr. Sreyleak Tep', specialty: 'Pediatric Dentistry', color: '#f97316' },
+        { id: 5, name: 'Dr. Rattanak Soun', specialty: 'Endodontics', color: '#3b82f6' },
+        { id: 6, name: 'Dr. Chenda Lim', specialty: 'Periodontics', color: '#10b981' },
+        { id: 7, name: 'Dr. Bopha Nhem', specialty: 'Prosthodontics', color: '#f59e0b' },
+        { id: 8, name: 'Dr. Dara Chhay', specialty: 'Oral Medicine', color: '#ef4444' },
+        { id: 9, name: 'Dr. Sovannak Rath', specialty: 'Cosmetic Dentistry', color: '#06b6d4' },
+        { id: 10, name: 'Dr. Sreymom Tan', specialty: 'Dental Implants', color: '#8b5cf6' }
     ];
 
     const treatmentCategories = [
@@ -81,124 +154,10 @@ $(document).ready(function () {
     };
 
     // Initialize with sample appointments if empty
-    if (appointments.length === 0) {
-        appointments = [
-            // Multiple appointments on Jan 31 (today)
-            {
-                id: 1,
-                patientId: 1,
-                patientName: 'Sokha Meas',
-                providerId: 1,
-                providerName: 'Dr. Sopheap Chhorn',
-                treatmentCategory: 'consultation',
-                roomNumber: 1,
-                title: 'Initial Consultation',
-                dateStart: '2026-01-31 08:00',
-                dateEnd: '2026-01-31 08:30',
-                type: 'finished',
-                notes: 'New patient registration'
-            },
-            {
-                id: 2,
-                patientId: 2,
-                patientName: 'Channary Ouk',
-                providerId: 2,
-                providerName: 'Dr. Veasna Prak',
-                treatmentCategory: 'cleaning',
-                roomNumber: 2,
-                title: 'Teeth Cleaning',
-                dateStart: '2026-01-31 09:00',
-                dateEnd: '2026-01-31 09:45',
-                type: 'queue',
-                notes: 'Regular cleaning'
-            },
-            {
-                id: 3,
-                patientId: 3,
-                patientName: 'Visal Keo',
-                providerId: 1,
-                providerName: 'Dr. Sopheap Chhorn',
-                treatmentCategory: 'filling',
-                roomNumber: 1,
-                title: 'Cavity Filling',
-                dateStart: '2026-01-31 10:00',
-                dateEnd: '2026-01-31 11:00',
-                type: 'appointment',
-                notes: '2 cavities on upper molars'
-            },
-            {
-                id: 4,
-                patientId: 4,
-                patientName: 'Sreymom Pich',
-                providerId: 3,
-                providerName: 'Dr. Kosal Mony',
-                treatmentCategory: 'extraction',
-                roomNumber: 3,
-                title: 'Wisdom Tooth Extraction',
-                dateStart: '2026-01-31 11:30',
-                dateEnd: '2026-01-31 12:30',
-                type: 'appointment',
-                notes: 'Lower right wisdom tooth'
-            },
-            {
-                id: 5,
-                patientId: 5,
-                patientName: 'Bunthoeun Heng',
-                providerId: 2,
-                providerName: 'Dr. Veasna Prak',
-                treatmentCategory: 'regular-checkup',
-                roomNumber: 2,
-                title: 'Regular Checkup',
-                dateStart: '2026-01-31 14:00',
-                dateEnd: '2026-01-31 14:30',
-                type: 'followup',
-                notes: 'Follow up from last month'
-            },
-            // More appointments on different days
-            {
-                id: 6,
-                patientId: 6,
-                patientName: 'Socheata Ly',
-                providerId: 4,
-                providerName: 'Dr. Sreyleak Tep',
-                treatmentCategory: 'consultation',
-                roomNumber: 4,
-                title: 'Child Dental Checkup',
-                dateStart: '2026-01-15 09:00',
-                dateEnd: '2026-01-15 09:30',
-                type: 'finished',
-                notes: 'Pediatric patient - age 8'
-            },
-            {
-                id: 7,
-                patientId: 7,
-                patientName: 'Rithya Noun',
-                providerId: 1,
-                providerName: 'Dr. Sopheap Chhorn',
-                treatmentCategory: 'root-canal',
-                roomNumber: 1,
-                title: 'Root Canal Treatment',
-                dateStart: '2026-01-20 10:00',
-                dateEnd: '2026-01-20 11:30',
-                type: 'cancelled',
-                notes: 'Patient rescheduled'
-            },
-            {
-                id: 8,
-                patientId: 8,
-                patientName: 'Pisey Seng',
-                providerId: 3,
-                providerName: 'Dr. Kosal Mony',
-                treatmentCategory: 'crown',
-                roomNumber: 3,
-                title: 'Crown Fitting',
-                dateStart: '2026-02-05 11:00',
-                dateEnd: '2026-02-05 12:00',
-                type: 'appointment',
-                notes: 'Final crown fitting'
-            }
-        ];
-        localStorage.setItem('calendar-appointments', JSON.stringify(appointments));
+    function checkAndInitializeSampleData() {
+        if (appointments.length === 0) {
+            useSampleData();
+        }
     }
 
     // Dynamic holidays cache
@@ -447,9 +406,9 @@ $(document).ready(function () {
             const beYear = firstDay.khmer.beYear;
 
             if (firstMonth === lastMonth) {
-                return `${firstMonth} ${animalYear} ${beYear}`;
+                return `${firstMonth} ${animalYear} ${formatNumber(beYear)}`;
             } else {
-                return `${firstMonth} - ${lastMonth} ${animalYear} ${beYear}`;
+                return `${firstMonth} - ${lastMonth} ${animalYear} ${formatNumber(beYear)}`;
             }
         } catch (e) {
             return '';
@@ -504,7 +463,7 @@ $(document).ready(function () {
         // Update header
         const monthName = currentLanguage === 'en'
             ? `${translations.en.months[month]} ${year}`
-            : `${translations.kh.months[month]} ${year}`;
+            : `${translations.kh.months[month]} ${formatNumber(year)}`;
         $('#headerTitle').text(monthName);
 
         // Update lunar info
@@ -567,7 +526,7 @@ $(document).ready(function () {
 
         // Day header
         html += `<div class="day-header-row">`;
-        html += `<div class="day-number">${day}</div>`;
+        html += `<div class="day-number">${formatNumber(day)}</div>`;
         if (buddhistInfo && buddhistInfo.isBuddhistHolyDay) {
             html += `<img src="buddha-icon.png" class="buddhist-icon" alt="Buddhist Holy Day" onerror="this.style.display='none'" />`;
         }
@@ -586,7 +545,7 @@ $(document).ready(function () {
 
         // Appointment count
         if (appointmentCount > 0) {
-            html += `<div class="day-info"><span class="appointment-count">${appointmentCount}</span></div>`;
+            html += `<div class="day-info"><span class="appointment-count">${formatNumber(appointmentCount)}</span></div>`;
         }
 
         html += `</div>`;
@@ -734,20 +693,20 @@ $(document).ready(function () {
                 <div class="daily-summary-compact">
                     <div class="summary-item">
                         <span class="summary-label">Total:</span>
-                        <span class="summary-value">${totalCount}</span>
+                        <span class="summary-value">${formatNumber(totalCount)}</span>
                     </div>
                     <div class="summary-item">
                         <span class="summary-label">Scheduled:</span>
-                        <span class="summary-value">${scheduledCount}</span>
+                        <span class="summary-value">${formatNumber(scheduledCount)}</span>
                     </div>
                     <div class="summary-item">
                         <span class="summary-label">Completed:</span>
-                        <span class="summary-value">${completedCount}</span>
+                        <span class="summary-value">${formatNumber(completedCount)}</span>
                     </div>
                     ${cancelledCount > 0 ? `
                     <div class="summary-item">
                         <span class="summary-label">Cancelled:</span>
-                        <span class="summary-value">${cancelledCount}</span>
+                        <span class="summary-value">${formatNumber(cancelledCount)}</span>
                     </div>
                     ` : ''}
                 </div>
@@ -803,7 +762,7 @@ $(document).ready(function () {
                             <i class="fas fa-user-md"></i>
                             <div class="provider-header-info">
                                 <div class="provider-header-name">${providerName}</div>
-                                <div class="provider-header-meta">${appointments.length} appointments · ${firstTime} - ${lastTime}</div>
+                                <div class="provider-header-meta">${formatNumber(appointments.length)} appointments · ${formatNumber(firstTime)} - ${formatNumber(lastTime)}</div>
                             </div>
                         </div>
                     </div>
@@ -839,11 +798,11 @@ $(document).ready(function () {
                                 <span class="appointment-status-badge badge-${apt.type}">${statusLabel}</span>
                             </div>
                             <div class="appointment-item-details">
-                                <span class="appointment-time">${timeStart} - ${timeEnd}</span>
+                                <span class="appointment-time">${formatNumber(timeStart)} - ${formatNumber(timeEnd)}</span>
                                 <span class="appointment-detail-divider">·</span>
-                                <span>${dayName}, ${dayNum} ${monthName}</span>
+                                <span>${dayName}, ${formatNumber(dayNum)} ${monthName}</span>
                                 <span class="appointment-detail-divider">·</span>
-                                <span>Room ${apt.roomNumber}</span>
+                                <span>Room ${formatNumber(apt.roomNumber)}</span>
                             </div>
                             <div class="appointment-hover-actions">
                                 <button class="action-btn action-complete" onclick="event.stopPropagation(); quickStatusChange(${apt.id}, 'completed')" title="Mark as Completed">
@@ -879,7 +838,7 @@ $(document).ready(function () {
         mockProviders.forEach(p => {
             const isChecked = selectedProviderIds.includes(p.id);
             html += `
-                <label class="filter-provider-item">
+                <label class="filter-provider-item" data-provider-name="${p.name.toLowerCase()}">
                     <input type="checkbox" value="${p.id}" ${isChecked ? 'checked' : ''}>
                     <span>${p.name}</span>
                 </label>
@@ -893,6 +852,19 @@ $(document).ready(function () {
             updateSelectedProviders();
         });
     }
+
+    // Provider search functionality
+    $('#providerSearchInput').on('input', function () {
+        const searchTerm = $(this).val().toLowerCase();
+        $('.filter-provider-item').each(function () {
+            const providerName = $(this).data('provider-name');
+            if (providerName.includes(searchTerm)) {
+                $(this).show();
+            } else {
+                $(this).hide();
+            }
+        });
+    });
 
     // Update selected providers from checkboxes
     function updateSelectedProviders() {
@@ -2401,10 +2373,9 @@ $(document).ready(function () {
         renderCalendar();
     });
 
-    // Initialize
+    // Initialize UI elements
     updateQuickActionLanguage();
     updateSidebarTitle();
-    populateProviderFilter();
 
     const flag = currentLanguage === 'en' ? '🇬🇧' : '🇰🇭';
     const text = currentLanguage === 'en' ? 'English' : 'ខ្មែរ';
@@ -2413,10 +2384,6 @@ $(document).ready(function () {
 
     holidaysCache = {};
     buddhistEventsCache = {};
-
-    // Render calendar and appointments on page load
-    renderCalendar();
-    renderAppointments();
 
     // Hide New Appointment button initially (show only when date is selected)
     $('#newAppointmentBtn').hide();
@@ -4588,4 +4555,14 @@ $(document).ready(function () {
         else { renderCalendar(); renderAppointments(); }
         showNotification('Appointment booked successfully!', 'success');
     };
+
+    // Initialize calendar function
+    function initializeCalendar() {
+        renderCalendar();
+        populateProviderFilter();
+        checkAndInitializeSampleData();
+    }
+
+    // Load appointments from JSON on startup
+    loadAppointmentsFromJson();
 });
