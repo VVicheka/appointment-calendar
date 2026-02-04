@@ -41,39 +41,27 @@
             <!-- Search Box -->
             <div class="search-wrapper">
                 <div class="search-box">
-                    <i class="fas fa-search search-icon"></i>
                     <input type="text" class="search-input" id="globalSearch" placeholder="Search...">
+
                     <button class="search-clear" id="searchClear" style="display: none;">
                         <i class="fas fa-times"></i>
                     </button>
-                </div>
-                <div class="search-filters" id="searchFilters">
-                    <button class="search-filter-chip active" data-filter="all">
-                        <i class="fas fa-th-large"></i>
-                        <span>All</span>
-                        <span class="filter-count"></span>
-                    </button>
-                    <button class="search-filter-chip" data-filter="appointments">
-                        <i class="fas fa-calendar-check"></i>
-                        <span>Appointments</span>
-                        <span class="filter-count"></span>
-                    </button>
-                    <button class="search-filter-chip" data-filter="patients">
-                        <i class="fas fa-user"></i>
-                        <span>Patients</span>
-                        <span class="filter-count"></span>
-                    </button>
-                    <button class="search-filter-chip" data-filter="queue">
-                        <i class="fas fa-list-ul"></i>
-                        <span>Queue</span>
-                        <span class="filter-count"></span>
-                    </button>
-                    <button class="search-filter-chip" data-filter="followup">
-                        <i class="fas fa-redo"></i>
-                        <span>Follow-up</span>
-                        <span class="filter-count"></span>
+
+                    <button class="search-scope-btn" id="searchScopeBtn">
+                        <span id="searchScopeLabel">All</span>
+                        <i class="fas fa-chevron-down"></i>
                     </button>
                 </div>
+
+                <!-- Scope Dropdown -->
+                <div class="search-scope-dropdown" id="searchScopeDropdown">
+                    <button data-scope="all" class="active">All</button>
+                    <button data-scope="appointments">Appointments</button>
+                    <button data-scope="patients">Patients</button>
+                    <button data-scope="queue">Queue</button>
+                    <button data-scope="followup">Follow-up</button>
+                </div>
+
                 <div class="search-results" id="searchResults"></div>
             </div>
 
@@ -90,6 +78,12 @@
                 </button>
             </div>
 
+            <!-- Primary New Appointment Button -->
+            <button class="primary-action-btn" id="newAppointmentBtn" data-permission="staff">
+                <i class="fas fa-calendar-plus"></i>
+                <span class="action-label" data-en="New Appointment" data-kh="ការណាត់ជួបថ្មី">New Appointment</span>
+            </button>
+
             <!-- Quick Action Dropdown -->
             <div class="quick-action-wrapper">
                 <button class="quick-action-btn" id="quickActionBtn" aria-label="Quick Actions" aria-expanded="false">
@@ -104,11 +98,6 @@
                         <button class="quick-action-item" data-action="patient" data-permission="staff">
                             <i class="fas fa-user-plus"></i>
                             <span class="action-label" data-en="New Patient" data-kh="អ្នកជំងឺថ្មី">New Patient</span>
-                        </button>
-                        <button class="quick-action-item" data-action="appointment" data-permission="staff">
-                            <i class="fas fa-calendar-plus"></i>
-                            <span class="action-label" data-en="New Appointment" data-kh="ការណាត់ជួបថ្មី">New
-                                Appointment</span>
                         </button>
                         <button class="quick-action-item" data-action="lab-order" data-permission="clinical">
                             <i class="fas fa-flask"></i>
@@ -404,9 +393,23 @@
                         <span class="checkmark"></span>
                         <span class="filter-label">View All</span>
                     </label>
-                    <select class="filter-provider" id="filterProvider">
-                        <option value="">--- select provider ---</option>
-                    </select>
+                    <div class="filter-provider-multi">
+                        <button type="button" class="filter-provider-btn" id="filterProviderBtn">
+                            <span id="filterProviderLabel">All providers</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="filter-provider-dropdown" id="filterProviderDropdown">
+                            <div class="filter-provider-actions">
+                                <button type="button" class="filter-action-btn" onclick="selectAllProviders()">Select
+                                    all</button>
+                                <button type="button" class="filter-action-btn"
+                                    onclick="clearAllProvidersFilter()">Clear</button>
+                            </div>
+                            <div class="filter-provider-list" id="filterProviderList">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="filter-types">
                     <label class="filter-checkbox">
@@ -481,74 +484,94 @@
         </div>
 
         <div class="slide-panel-body">
+            <div id="dailyReportWrapper">
 
-            <!-- REPORT HEADER -->
-            <table class="report-header">
-                <tr>
-                    <td>
-                        <strong>Dental Excellence Clinic</strong><br>
-                        Street 450, Phnom Penh / +855 23 123 456
-                    </td>
-                    <td style="text-align:right">
-                        <strong>DAILY REPORT</strong><br>
-                        Date:
-                        <input type="date" id="reportDate" onchange="loadDailyReport()" />
-                    </td>
-                </tr>
-            </table>
-
-            <!-- SUMMARY -->
-            <table class="report-summary">
-                <tr>
-                    <th>Total Appointments</th>
-                    <th>Completed</th>
-                    <th>Cancelled</th>
-                    <th>Total Revenue</th>
-                </tr>
-                <tr>
-                    <td id="sumAppointments">0</td>
-                    <td id="sumCompleted">0</td>
-                    <td id="sumCancelled">0</td>
-                    <td id="sumRevenue">$0</td>
-                </tr>
-            </table>
-
-            <!-- APPOINTMENTS TABLE -->
-            <table class="report-table">
-                <thead>
+                <!-- REPORT HEADER -->
+                <table class="report-header">
                     <tr>
-                        <th>#</th>
-                        <th>Date</th>
-                        <th>Time</th>
-                        <th>Patient</th>
-                        <th>Provider</th>
-                        <th>Room</th>
-                        <th>Status</th>
-                        <th>Service</th>
-                        <th>Amount</th>
+                        <td>
+                            <strong>Dental Excellence Clinic</strong><br>
+                            Street 450, Phnom Penh / +855 23 123 456
+                        </td>
+                        <td style="text-align:right">
+                            <strong>DAILY REPORT</strong><br>
+                            Date:
+                            <input type="date" id="reportDate" onchange="loadDailyReport()" />
+                        </td>
                     </tr>
-                </thead>
-                <tbody id="dailyReportBody">
-                    <!-- JS will inject rows here -->
-                </tbody>
-            </table>
+                </table>
 
-            <!-- NOTES -->
-            <div class="report-notes">
-                <strong>Notes</strong>
-                <textarea id="dailyReportNote" placeholder="Enter any notes or observations..."></textarea>
+                <!-- APPROVAL INFO (shown on print) -->
+                <table class="report-approval" style="margin-top:10px; width:100%;">
+                    <tr>
+                        <td style="width:50%;">
+                            <strong>Approved By:</strong> <span id="printApprovedBy">-</span>
+                        </td>
+                        <td style="text-align:right;">
+                            <strong>Approval Date:</strong> <span id="printApprovalDate">-</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" style="padding-top:6px;">
+                            <strong>Approval Comment:</strong>
+                            <div id="printApprovalComment" style="margin-top:4px; white-space:pre-wrap;"></div>
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- SUMMARY -->
+                <table class="report-summary">
+                    <tr>
+                        <th>Total Appointments</th>
+                        <th>Completed</th>
+                        <th>Cancelled</th>
+                        <th>Total Revenue</th>
+                    </tr>
+                    <tr>
+                        <td id="sumAppointments">0</td>
+                        <td id="sumCompleted">0</td>
+                        <td id="sumCancelled">0</td>
+                        <td id="sumRevenue">$0</td>
+                    </tr>
+                </table>
+
+                <!-- APPOINTMENTS TABLE -->
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Patient</th>
+                            <th>Provider</th>
+                            <th>Room</th>
+                            <th>Status</th>
+                            <th>Service</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dailyReportBody">
+                        <!-- JS will inject rows here -->
+                    </tbody>
+                </table>
+
+                <!-- NOTES -->
+                <div class="report-notes">
+                    <strong>Notes</strong>
+                    <textarea id="dailyReportNote" placeholder="Enter any notes or observations..."></textarea>
+                </div>
+
+                <!-- ACTIONS -->
+                <div class="form-actions">
+                    <button class="btn btn-secondary" onclick="closeDailyReport()">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                    <button class="btn btn-primary" onclick="openApprovalModal()">
+                        <i class="fas fa-print"></i> Print Daily Report
+                    </button>
+                </div>
+
             </div>
-
-            <!-- ACTIONS -->
-            <div class="form-actions">
-                <button class="btn btn-secondary" onclick="closeDailyReport()">
-                    <i class="fas fa-times"></i> Close
-                </button>
-                <button class="btn btn-primary" onclick="openApprovalModal()">
-                    <i class="fas fa-print"></i> Print Daily Report
-                </button>
-            </div>
-
         </div>
     </div>
 

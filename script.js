@@ -650,7 +650,6 @@ $(document).ready(function () {
 
         // Get active filters
         const viewAll = $('#filterViewAll').is(':checked');
-        const selectedProvider = $('#filterProvider').val();
         const activeTypes = [];
         $('.filter-type:checked').each(function () {
             activeTypes.push($(this).val());
@@ -674,8 +673,8 @@ $(document).ready(function () {
             // Filter by type
             if (!viewAll && !activeTypes.includes(apt.type)) return false;
 
-            // Filter by provider
-            if (selectedProvider && apt.providerId != selectedProvider) return false;
+            // Filter by provider (multi-select)
+            if (selectedProviderIds.length > 0 && !selectedProviderIds.includes(apt.providerId)) return false;
 
             return true;
         });
@@ -865,14 +864,86 @@ $(document).ready(function () {
         $('#sidebarTitle').text(currentLanguage === 'en' ? 'Appointments' : 'ការណាត់ជួប');
     }
 
+    // Multi-provider selection state
+    let selectedProviderIds = JSON.parse(localStorage.getItem('filter-selected-providers') || '[]');
+
     // Populate provider filter
     function populateProviderFilter() {
-        let options = `<option value="">--- ${currentLanguage === 'en' ? 'select provider' : 'ជ្រើសរើសអ្នកផ្តល់សេវា'} ---</option>`;
+        let html = '';
         mockProviders.forEach(p => {
-            options += `<option value="${p.id}">${p.name}</option>`;
+            const isChecked = selectedProviderIds.includes(p.id);
+            html += `
+                <label class="filter-provider-item">
+                    <input type="checkbox" value="${p.id}" ${isChecked ? 'checked' : ''}>
+                    <span>${p.name}</span>
+                </label>
+            `;
         });
-        $('#filterProvider').html(options);
+        $('#filterProviderList').html(html);
+        updateProviderLabel();
+
+        // Add change handler
+        $('.filter-provider-item input').change(function () {
+            updateSelectedProviders();
+        });
     }
+
+    // Update selected providers from checkboxes
+    function updateSelectedProviders() {
+        selectedProviderIds = [];
+        $('.filter-provider-item input:checked').each(function () {
+            selectedProviderIds.push(parseInt($(this).val()));
+        });
+        localStorage.setItem('filter-selected-providers', JSON.stringify(selectedProviderIds));
+        updateProviderLabel();
+        renderAppointments();
+    }
+
+    // Update provider label based on selection
+    function updateProviderLabel() {
+        const count = selectedProviderIds.length;
+        let label = '';
+        if (count === 0) {
+            label = 'All providers';
+        } else if (count === 1) {
+            const provider = mockProviders.find(p => p.id === selectedProviderIds[0]);
+            label = provider ? provider.name : 'All providers';
+        } else if (count === 2) {
+            const names = selectedProviderIds.map(id => {
+                const provider = mockProviders.find(p => p.id === id);
+                return provider ? provider.name : '';
+            }).filter(n => n);
+            label = names.join(', ');
+        } else {
+            label = `${count} selected`;
+        }
+        $('#filterProviderLabel').text(label);
+    }
+
+    // Toggle provider dropdown
+    $('#filterProviderBtn').click(function (e) {
+        e.stopPropagation();
+        $('#filterProviderDropdown').toggle();
+    });
+
+    // Close dropdown when clicking outside
+    $(document).click(function (e) {
+        if (!$(e.target).closest('.filter-provider-multi').length) {
+            $('#filterProviderDropdown').hide();
+        }
+    });
+
+    // Select all providers
+    window.selectAllProviders = function () {
+        $('.filter-provider-item input').prop('checked', true);
+        updateSelectedProviders();
+    };
+
+    // Clear all providers
+    window.clearAllProvidersFilter = function () {
+        $('.filter-provider-item input').prop('checked', false);
+        updateSelectedProviders();
+    };
 
     // Filter change handlers
     $('#filterViewAll').change(function () {
@@ -885,10 +956,6 @@ $(document).ready(function () {
     $('.filter-type').change(function () {
         const allChecked = $('.filter-type:checked').length === $('.filter-type').length;
         $('#filterViewAll').prop('checked', allChecked);
-        renderAppointments();
-    });
-
-    $('#filterProvider').change(function () {
         renderAppointments();
     });
 
@@ -2059,6 +2126,11 @@ $(document).ready(function () {
         });
     }
 
+    // Primary New Appointment button
+    $('#newAppointmentBtn').on('click', function () {
+        openSlidePanel('appointment');
+    });
+
     $('#quickActionBtn').click(function (e) {
         e.stopPropagation();
         const $dropdown = $('#quickActionDropdown');
@@ -2100,22 +2172,33 @@ $(document).ready(function () {
     });
 
     function filterActionsByPermission() {
-        $('.quick-action-item').each(function () {
-            const $item = $(this);
-            const requiredPermission = $item.attr('data-permission');
-
-            const canAccess = (
+        function canAccessPermission(requiredPermission) {
+            return (
                 userRole === 'admin' ||
                 (userRole === 'clinical' && requiredPermission !== 'admin') ||
                 (userRole === 'staff' && requiredPermission === 'staff')
             );
+        }
 
-            if (canAccess) {
+        // Filter dropdown items
+        $('.quick-action-item').each(function () {
+            const $item = $(this);
+            const requiredPermission = $item.attr('data-permission');
+            if (canAccessPermission(requiredPermission)) {
                 $item.show();
             } else {
                 $item.hide();
             }
         });
+
+        // Filter primary button
+        const $newAppt = $('#newAppointmentBtn');
+        const perm = $newAppt.attr('data-permission');
+        if (canAccessPermission(perm)) {
+            $newAppt.show();
+        } else {
+            $newAppt.hide();
+        }
     }
 
     $('.quick-action-item').click(function () {
@@ -2252,7 +2335,47 @@ $(document).ready(function () {
     // GLOBAL SEARCH
     // ====================
     let searchTimeout;
-    let activeSearchFilter = 'all';
+    let currentSearchScope = 'all';
+
+    // Scope dropdown handlers
+    const scopeBtn = $('#searchScopeBtn');
+    const scopeDropdown = $('#searchScopeDropdown');
+    const scopeLabel = $('#searchScopeLabel');
+
+    scopeBtn.click(function (e) {
+        e.stopPropagation();
+        const isOpen = scopeDropdown.hasClass('show');
+        scopeDropdown.toggleClass('show');
+        scopeBtn.attr('aria-expanded', !isOpen);
+    });
+
+    scopeDropdown.on('click', 'button', function () {
+        const scope = $(this).data('scope');
+        if (!scope) return;
+
+        currentSearchScope = scope;
+        scopeLabel.text($(this).text());
+
+        scopeDropdown.find('button').removeClass('active');
+        $(this).addClass('active');
+
+        scopeDropdown.removeClass('show');
+        scopeBtn.attr('aria-expanded', 'false');
+
+        // Re-run search if there's a query
+        const query = $('#globalSearch').val().trim();
+        if (query.length >= 2) {
+            performSearch(query.toLowerCase());
+        }
+    });
+
+    // Close dropdown when clicking outside
+    $(document).click(function (e) {
+        if (!$(e.target).closest('.search-wrapper').length) {
+            scopeDropdown.removeClass('show');
+            scopeBtn.attr('aria-expanded', 'false');
+        }
+    });
 
     $('#globalSearch').on('input', function () {
         const query = $(this).val().trim().toLowerCase();
@@ -2262,12 +2385,10 @@ $(document).ready(function () {
         if (query.length < 2) {
             $('#searchResults').hide();
             $('#searchClear').hide();
-            $('#searchFilters').hide();
             return;
         }
 
         $('#searchClear').show();
-        $('#searchFilters').show();
 
         searchTimeout = setTimeout(() => {
             performSearch(query);
@@ -2277,23 +2398,7 @@ $(document).ready(function () {
     $('#searchClear').click(function () {
         $('#globalSearch').val('');
         $('#searchResults').hide();
-        $('#searchFilters').hide();
         $(this).hide();
-        activeSearchFilter = 'all';
-        $('.search-filter-chip').removeClass('active');
-        $('.search-filter-chip[data-filter="all"]').addClass('active');
-    });
-
-    // Filter chip click handlers
-    $(document).on('click', '.search-filter-chip', function () {
-        activeSearchFilter = $(this).data('filter');
-        $('.search-filter-chip').removeClass('active');
-        $(this).addClass('active');
-
-        const query = $('#globalSearch').val().trim().toLowerCase();
-        if (query.length >= 2) {
-            performSearch(query);
-        }
     });
 
     function performSearch(query) {
@@ -2306,135 +2411,136 @@ $(document).ready(function () {
         };
 
         // Search patients
-        mockPatients.forEach(patient => {
-            if (patient.name.toLowerCase().includes(query) ||
-                patient.phone.includes(query)) {
-                const patientApts = appointments.filter(a => a.patientId === patient.id);
-                const upcomingCount = patientApts.filter(a => new Date(a.dateStart) > new Date()).length;
-                const lastVisit = patientApts.length > 0 ?
-                    patientApts.sort((a, b) => new Date(b.dateStart) - new Date(a.dateStart))[0] : null;
+        if (currentSearchScope === 'all' || currentSearchScope === 'patients') {
+            mockPatients.forEach(patient => {
+                if (patient.name.toLowerCase().includes(query) ||
+                    patient.phone.includes(query)) {
+                    const patientApts = appointments.filter(a => a.patientId === patient.id);
+                    const upcomingCount = patientApts.filter(a => new Date(a.dateStart) > new Date()).length;
+                    const lastVisit = patientApts.length > 0 ?
+                        patientApts.sort((a, b) => new Date(b.dateStart) - new Date(a.dateStart))[0] : null;
 
-                const result = {
-                    type: 'patient',
-                    icon: 'fa-user',
-                    title: patient.name,
-                    subtitle: patient.phone,
-                    upcomingCount,
-                    lastVisit,
-                    data: patient
-                };
-                results.patients.push(result);
-                results.all.push(result);
-            }
-        });
+                    const result = {
+                        type: 'patient',
+                        icon: 'fa-user',
+                        title: patient.name,
+                        subtitle: patient.phone,
+                        upcomingCount,
+                        lastVisit,
+                        data: patient
+                    };
+                    results.patients.push(result);
+                    results.all.push(result);
+                }
+            });
+        }
 
         // Search appointments
-        appointments.forEach(apt => {
-            if (apt.patientName.toLowerCase().includes(query) ||
-                apt.providerName.toLowerCase().includes(query) ||
-                apt.title.toLowerCase().includes(query) ||
-                (apt.treatment && apt.treatment.toLowerCase().includes(query))) {
+        if (currentSearchScope === 'all' || currentSearchScope === 'appointments') {
+            appointments.forEach(apt => {
+                if (apt.patientName.toLowerCase().includes(query) ||
+                    apt.providerName.toLowerCase().includes(query) ||
+                    apt.title.toLowerCase().includes(query) ||
+                    (apt.treatment && apt.treatment.toLowerCase().includes(query))) {
 
-                const dateObj = new Date(apt.dateStart);
-                const date = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                const time = dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-                const provider = mockProviders.find(p => p.id === apt.providerId);
+                    const dateObj = new Date(apt.dateStart);
+                    const date = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    const time = dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                    const provider = mockProviders.find(p => p.id === apt.providerId);
 
-                const result = {
-                    type: 'appointment',
-                    icon: 'fa-calendar-check',
-                    title: `${date}, ${time}`,
-                    patient: apt.patientName,
-                    provider: apt.providerName,
-                    treatment: apt.treatment || 'General',
-                    room: apt.roomNumber || 1,
-                    status: apt.type,
-                    statusColor: appointmentTypes.find(t => t.value === apt.type)?.color || '#3b82f6',
-                    data: apt
-                };
-                results.appointments.push(result);
-                results.all.push(result);
-            }
-        });
+                    const result = {
+                        type: 'appointment',
+                        icon: 'fa-calendar-check',
+                        title: `${date}, ${time}`,
+                        patient: apt.patientName,
+                        provider: apt.providerName,
+                        treatment: apt.treatment || 'General',
+                        room: apt.roomNumber || 1,
+                        status: apt.type,
+                        statusColor: appointmentTypes.find(t => t.value === apt.type)?.color || '#3b82f6',
+                        data: apt
+                    };
+                    results.appointments.push(result);
+                    results.all.push(result);
+                }
+            });
+        }
 
         // Search queue (appointments that are arrived/ready/in-treatment)
-        const queueStatuses = ['arrived', 'ready', 'in-treatment'];
-        appointments.forEach(apt => {
-            if (queueStatuses.includes(apt.type) &&
-                (apt.patientName.toLowerCase().includes(query) ||
-                    apt.providerName.toLowerCase().includes(query))) {
+        if (currentSearchScope === 'all' || currentSearchScope === 'queue') {
+            const queueStatuses = ['arrived', 'ready', 'in-treatment'];
+            appointments.forEach(apt => {
+                if (queueStatuses.includes(apt.type) &&
+                    (apt.patientName.toLowerCase().includes(query) ||
+                        apt.providerName.toLowerCase().includes(query))) {
 
-                const dateObj = new Date(apt.dateStart);
-                const arrivedTime = dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-                const waitMinutes = Math.floor((new Date() - dateObj) / 60000);
-                const provider = mockProviders.find(p => p.id === apt.providerId);
+                    const dateObj = new Date(apt.dateStart);
+                    const arrivedTime = dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                    const waitMinutes = Math.floor((new Date() - dateObj) / 60000);
+                    const provider = mockProviders.find(p => p.id === apt.providerId);
 
-                const result = {
-                    type: 'queue',
-                    icon: 'fa-list-ul',
-                    title: apt.patientName,
-                    provider: apt.providerName,
-                    status: apt.type,
-                    statusLabel: appointmentTypes.find(t => t.value === apt.type)?.label || apt.type,
-                    room: apt.roomNumber || 1,
-                    arrivedTime,
-                    waitMinutes,
-                    urgency: waitMinutes > 30 ? 'high' : waitMinutes > 15 ? 'medium' : 'low',
-                    data: apt
-                };
-                results.queue.push(result);
-                results.all.push(result);
-            }
-        });
+                    const result = {
+                        type: 'queue',
+                        icon: 'fa-list-ul',
+                        title: apt.patientName,
+                        provider: apt.providerName,
+                        status: apt.type,
+                        statusLabel: appointmentTypes.find(t => t.value === apt.type)?.label || apt.type,
+                        room: apt.roomNumber || 1,
+                        arrivedTime,
+                        waitMinutes,
+                        urgency: waitMinutes > 30 ? 'high' : waitMinutes > 15 ? 'medium' : 'low',
+                        data: apt
+                    };
+                    results.queue.push(result);
+                    results.all.push(result);
+                }
+            });
+        }
 
         // Search follow-ups (appointments with needs-followup status or future scheduled follow-ups)
-        appointments.forEach(apt => {
-            if (apt.type === 'needs-followup' &&
-                (apt.patientName.toLowerCase().includes(query) ||
-                    apt.treatment?.toLowerCase().includes(query))) {
+        if (currentSearchScope === 'all' || currentSearchScope === 'followup') {
+            appointments.forEach(apt => {
+                if (apt.type === 'needs-followup' &&
+                    (apt.patientName.toLowerCase().includes(query) ||
+                        apt.treatment?.toLowerCase().includes(query))) {
 
-                const dateObj = new Date(apt.dateStart);
-                const visitDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                const provider = mockProviders.find(p => p.id === apt.providerId);
+                    const dateObj = new Date(apt.dateStart);
+                    const visitDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    const provider = mockProviders.find(p => p.id === apt.providerId);
 
-                // Calculate suggested follow-up date (2 weeks after visit)
-                const followupDate = new Date(dateObj);
-                followupDate.setDate(followupDate.getDate() + 14);
-                const daysUntil = Math.ceil((followupDate - new Date()) / (1000 * 60 * 60 * 24));
+                    // Calculate suggested follow-up date (2 weeks after visit)
+                    const followupDate = new Date(dateObj);
+                    followupDate.setDate(followupDate.getDate() + 14);
+                    const daysUntil = Math.ceil((followupDate - new Date()) / (1000 * 60 * 60 * 24));
 
-                const result = {
-                    type: 'followup',
-                    icon: 'fa-redo',
-                    title: apt.patientName,
-                    treatment: apt.treatment || 'General follow-up',
-                    originalVisit: visitDate,
-                    provider: apt.providerName,
-                    dueDate: followupDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-                    daysUntil,
-                    isOverdue: daysUntil < 0,
-                    data: apt
-                };
-                results.followup.push(result);
-                results.all.push(result);
-            }
-        });
-
-        // Update filter counts
-        $('.search-filter-chip[data-filter="all"] .filter-count').text(results.all.length ? `(${results.all.length})` : '');
-        $('.search-filter-chip[data-filter="appointments"] .filter-count').text(results.appointments.length ? `(${results.appointments.length})` : '');
-        $('.search-filter-chip[data-filter="patients"] .filter-count').text(results.patients.length ? `(${results.patients.length})` : '');
-        $('.search-filter-chip[data-filter="queue"] .filter-count').text(results.queue.length ? `(${results.queue.length})` : '');
-        $('.search-filter-chip[data-filter="followup"] .filter-count').text(results.followup.length ? `(${results.followup.length})` : '');
+                    const result = {
+                        type: 'followup',
+                        icon: 'fa-redo',
+                        title: apt.patientName,
+                        treatment: apt.treatment || 'General follow-up',
+                        originalVisit: visitDate,
+                        provider: apt.providerName,
+                        dueDate: followupDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                        daysUntil,
+                        isOverdue: daysUntil < 0,
+                        data: apt
+                    };
+                    results.followup.push(result);
+                    results.all.push(result);
+                }
+            });
+        }
 
         renderSearchResults(results);
     }
 
     function renderSearchResults(results) {
         const $container = $('#searchResults');
-        const displayResults = activeSearchFilter === 'all' ? results.all : results[activeSearchFilter];
+        const displayResults = currentSearchScope === 'all' ? results.all : results[currentSearchScope];
 
         if (displayResults.length === 0) {
-            const filterLabel = activeSearchFilter.charAt(0).toUpperCase() + activeSearchFilter.slice(1);
+            const filterLabel = currentSearchScope.charAt(0).toUpperCase() + currentSearchScope.slice(1);
             $container.html(`<div class="search-no-results"><i class="fas fa-search"></i><p>No ${filterLabel} found</p><small>Try another filter or search term</small></div>`);
             $container.show();
             return;
@@ -3929,33 +4035,210 @@ $(document).ready(function () {
         document.getElementById('approvalModal').style.display = 'none';
     };
 
+    // ===============================
+    // DAILY REPORT (PRINTABLE) FEATURE
+    // ===============================
+
+    function getAppointmentsFromStorage() {
+        const list = JSON.parse(localStorage.getItem("calendar-appointments")) || [];
+        // keep only ones with dateStart
+        return list.filter(a => a && a.dateStart);
+    }
+
+    function parseDateOnly(dateStartStr) {
+        // "2026-02-04 11:00" => "2026-02-04"
+        return String(dateStartStr).split(" ")[0];
+    }
+
+    function parseTimeOnly(dateStartStr) {
+        // "2026-02-04 11:00" => "11:00"
+        const parts = String(dateStartStr).split(" ");
+        return parts[1] ? parts[1].slice(0, 5) : "";
+    }
+
+    function money(val) {
+        const n = Number(val || 0);
+        return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function ensurePrintNotesBox() {
+        const notesWrap = document.querySelector(".report-notes");
+        if (!notesWrap) return;
+
+        let box = document.getElementById("printNotesBox");
+        if (!box) {
+            box = document.createElement("div");
+            box.id = "printNotesBox";
+            box.className = "print-notes-box";
+            box.style.display = "none"; // only visible in print via CSS
+            notesWrap.appendChild(box);
+        }
+    }
+
+    function ensureReportDateText() {
+        const header = document.querySelector(".report-header");
+        if (!header) return;
+
+        let span = document.getElementById("reportDateText");
+        if (!span) {
+            span = document.createElement("span");
+            span.id = "reportDateText";
+            span.style.display = "none"; // shown only in print css
+            // Put it near the date input
+            const dateInput = document.getElementById("reportDate");
+            if (dateInput && dateInput.parentElement) {
+                dateInput.parentElement.appendChild(span);
+            } else {
+                header.appendChild(span);
+            }
+        }
+    }
+
+    window.openDailyReport = function () {
+        const panel = document.getElementById("dailyReportPanel");
+        const overlay = document.getElementById("slidePanelOverlay");
+        if (panel) panel.classList.add("show");
+        if (overlay) overlay.style.display = "block";
+
+        // default report date = today
+        const reportDate = document.getElementById("reportDate");
+        if (reportDate && !reportDate.value) {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, "0");
+            const dd = String(today.getDate()).padStart(2, "0");
+            reportDate.value = `${yyyy}-${mm}-${dd}`;
+        }
+        loadDailyReport();
+    };
+
+    window.closeDailyReport = function () {
+        const panel = document.getElementById("dailyReportPanel");
+        const overlay = document.getElementById("slidePanelOverlay");
+        if (panel) panel.classList.remove("show");
+        if (overlay) overlay.style.display = "none";
+    };
+
+    window.loadDailyReport = function () {
+        ensurePrintNotesBox();
+        ensureReportDateText();
+
+        const dateVal = document.getElementById("reportDate")?.value;
+        const tbody = document.getElementById("dailyReportBody");
+
+        if (!dateVal || !tbody) return;
+
+        const appts = getAppointmentsFromStorage().filter(a => parseDateOnly(a.dateStart) === dateVal);
+
+        // Totals (adjust mapping to your real status fields)
+        const totalAppointments = appts.length;
+        const completed = appts.filter(a => ["completed", "finished"].includes(String(a.type))).length;
+        const cancelled = appts.filter(a => String(a.type) === "cancelled").length;
+
+        // Revenue: try a.amount, else 0
+        const revenue = appts.reduce((sum, a) => sum + Number(a.amount || 0), 0);
+
+        document.getElementById("sumAppointments").textContent = totalAppointments;
+        document.getElementById("sumCompleted").textContent = completed;
+        document.getElementById("sumCancelled").textContent = cancelled;
+        document.getElementById("sumRevenue").textContent = `$${money(revenue)}`;
+
+        // Table rows
+        tbody.innerHTML = "";
+        appts.forEach((a, idx) => {
+            const tr = document.createElement("tr");
+
+            const status = a.type || "";
+            const service = a.treatmentCategory || a.treatment || a.title || "";
+            const provider = mockProviders.find(p => p.id == a.providerId);
+            const providerName = provider ? provider.name.replace('Dr. ', '') : (a.providerName || 'N/A');
+
+            tr.innerHTML = `
+                <td>${idx + 1}</td>
+                <td>${parseDateOnly(a.dateStart)}</td>
+                <td>${parseTimeOnly(a.dateStart)}${a.dateEnd ? " - " + parseTimeOnly(a.dateEnd) : ""}</td>
+                <td>${a.patientName || ""}</td>
+                <td>${providerName}</td>
+                <td>${a.roomNumber || ""}</td>
+                <td>${status}</td>
+                <td>${service}</td>
+                <td>$${money(a.amount || 0)}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        // update print date text
+        const dateText = document.getElementById("reportDateText");
+        if (dateText) dateText.textContent = ` ${dateVal} `;
+    };
+
+    window.openApprovalModal = function () {
+        const modal = document.getElementById("approvalModal");
+        if (modal) modal.style.display = "flex";
+    };
+
     window.confirmPrint = function () {
-        const comment = document.getElementById('approvalComment').value.trim();
+        ensurePrintNotesBox();
+        ensureReportDateText();
+
+        const comment = (document.getElementById("approvalComment")?.value || "").trim();
         if (!comment) {
-            alert('Approval comment is required');
-            document.getElementById('approvalComment').focus();
+            alert("Approval comment is required.");
             return;
         }
 
-        // Close modal
-        closeApprovalModal();
+        const approvedBy = (document.getElementById("approvedBy")?.value || "").trim() || "Manager";
+        const now = new Date();
+        const approvalDate = now.toLocaleString();
+        const reportDate = document.getElementById('reportDate')?.value;
+        const notes = document.getElementById('dailyReportNote')?.value;
 
         // Save report data
         const reportData = {
             id: Date.now(),
-            date: document.getElementById('reportDate').value,
-            notes: document.getElementById('dailyReportNote').value,
-            approvedBy: document.getElementById('approvedBy').value || 'Not specified',
+            date: reportDate,
+            notes: notes,
+            approvedBy: approvedBy,
             approvalComment: comment,
-            approvalDate: new Date().toLocaleString()
+            approvalDate: approvalDate
         };
 
-        // Save to localStorage
         let dailyReports = JSON.parse(localStorage.getItem('calendar-daily-reports') || '[]');
         dailyReports.push(reportData);
         localStorage.setItem('calendar-daily-reports', JSON.stringify(dailyReports));
 
-        // Print
+        // Put approval info into report placeholders
+        const a1 = document.getElementById("printApprovedBy");
+        const a2 = document.getElementById("printApprovalDate");
+        const a3 = document.getElementById("printApprovalComment");
+
+        if (a1) a1.textContent = approvedBy || "Manager";
+        if (a2) a2.textContent = approvalDate;
+        if (a3) a3.textContent = comment;
+
+        // Notes: copy textarea value into print box
+        const noteVal = (document.getElementById("dailyReportNote")?.value || "").trim();
+        const printNotes = document.getElementById("printNotesBox");
+        if (printNotes) printNotes.textContent = noteVal || " ";
+
+        // Date text for print
+        const dateVal = document.getElementById("reportDate")?.value || "";
+        const dateText = document.getElementById("reportDateText");
+        if (dateText) dateText.textContent = ` ${dateVal} `;
+
+        // Close modal BEFORE printing
+        closeApprovalModal();
+
+        // IMPORTANT: enable report-print mode
+        document.body.classList.add("printing-daily-report");
+
+        // Print and then cleanup
+        const cleanup = () => {
+            document.body.classList.remove("printing-daily-report");
+            window.removeEventListener("afterprint", cleanup);
+        };
+        window.addEventListener("afterprint", cleanup);
+
         window.print();
     };
 
