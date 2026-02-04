@@ -472,11 +472,15 @@ $(document).ready(function () {
         if (selectedDate && formatDateKey(selectedDate) === dateKey) {
             selectedDate = null;
             $('.day-cell').removeClass('selected');
+            // Hide New Appointment button
+            $('#newAppointmentBtn').hide();
         } else {
             selectedDate = date;
             // Update selected state in calendar
             $('.day-cell').removeClass('selected');
             $(`.day-cell[data-date="${dateKey}"]`).addClass('selected');
+            // Show New Appointment button
+            $('#newAppointmentBtn').show();
         }
 
         // Update sidebar
@@ -487,6 +491,8 @@ $(document).ready(function () {
     function clearDateSelection() {
         selectedDate = null;
         $('.day-cell').removeClass('selected');
+        // Hide New Appointment button
+        $('#newAppointmentBtn').hide();
         renderAppointments();
     }
 
@@ -1240,6 +1246,13 @@ $(document).ready(function () {
                             <select class="form-select" name="patientId" id="patientId" required>
                                 ${patientOptions}
                             </select>
+                            <div style="position: relative; margin-top: 0.5rem;">
+                                <input type="text" class="form-input" id="patientSearchInput" placeholder="${currentLanguage === 'en' ? 'Search patient by name or phone...' : 'ស្វែងរកអ្នកជំងឺតាមឈ្មោះ ឬលេខទូរស័ព្ទ...'}" oninput="filterPatients(this.value)" onfocus="filterPatients(this.value)">
+                                <div id="patientSearchResults" class="patient-search-dropdown" style="display: none;"></div>
+                            </div>
+                            <small class="form-helper" style="display: block; margin-top: 0.25rem; color: #666; font-size: 0.85rem;">
+                                ${currentLanguage === 'en' ? 'Type to search and select patient' : 'វាយបញ្ចូលដើម្បីស្វែងរក និងជ្រើសរើសអ្នកជំងឺ'}
+                            </small>
                         </div>
                         <div class="form-group">
                             <label class="form-label">${currentLanguage === 'en' ? 'Provider/dentist response' : 'អ្នកផ្តល់សេវា'} <span class="required">*</span></label>
@@ -2098,6 +2111,136 @@ $(document).ready(function () {
     window.closeSlidePanel = closeSlidePanel;
 
     // ====================
+    // PATIENT SEARCH FILTER
+    // ====================
+
+    /**
+     * Filter patients based on search input
+     * Demonstrates the payload structure that would be sent to API
+     */
+    window.filterPatients = function (searchTerm) {
+        const $select = $('#patientId');
+        const $dropdown = $('#patientSearchResults');
+
+        // This is the payload structure that would be sent to the API
+        const payload = {
+            clinic_id: "1",
+            draw: 1,
+            length: 25,
+            search: { value: searchTerm, regex: false },
+            start: 0,
+            status: 1,
+            term: searchTerm,
+            _type: "query"
+        };
+
+        // Log the payload to console to show structure
+        console.log('API Payload Structure:', JSON.stringify(payload, null, 2));
+
+        // Filter mock patients locally (simulating API response)
+        const filteredPatients = mockPatients.filter(patient =>
+            patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            patient.phone.includes(searchTerm)
+        );
+
+        // Simulate API response structure
+        const apiResponse = {
+            draw: 1,
+            recordsTotal: mockPatients.length,
+            recordsFiltered: filteredPatients.length,
+            data: filteredPatients.map(patient => ({
+                id: patient.id,
+                text: patient.name,
+                code: `P${String(patient.id).padStart(4, '0')}`,
+                age: calculateAge(patient),
+                phone_number: patient.phone,
+                gender_id: patient.gender === 'male' ? 1 : 2
+            }))
+        };
+
+        console.log('API Response Structure:', JSON.stringify(apiResponse, null, 2));
+
+        // Show dropdown if there's a search term
+        if (searchTerm.trim() === '') {
+            $dropdown.hide();
+            return;
+        }
+
+        // Build dropdown HTML
+        if (filteredPatients.length === 0) {
+            $dropdown.html(`
+                <div class="patient-search-item no-results">
+                    <i class="fas fa-info-circle"></i>
+                    ${currentLanguage === 'en' ? 'No patients found' : 'រកមិនឃើញអ្នកជំងឺ'}
+                </div>
+            `).show();
+            return;
+        }
+
+        let dropdownHTML = '';
+        filteredPatients.forEach(patient => {
+            const code = `P${String(patient.id).padStart(4, '0')}`;
+            const age = calculateAge(patient);
+            dropdownHTML += `
+                <div class="patient-search-item" onclick="selectPatientFromSearch(${patient.id}, '${patient.name.replace(/'/g, "\\'")}')">
+                    <div class="patient-search-name">
+                        <i class="fas fa-user-circle"></i>
+                        ${patient.name}
+                    </div>
+                    <div class="patient-search-details">
+                        <span class="patient-search-code">${code}</span>
+                        <span class="patient-search-age">${age} yrs</span>
+                        <span class="patient-search-phone">${patient.phone}</span>
+                    </div>
+                </div>
+            `;
+        });
+
+        $dropdown.html(dropdownHTML).show();
+
+        // Update helper text
+        const $helper = $('#patientSearchInput').siblings('.form-helper');
+        $helper.text(`${filteredPatients.length} ${currentLanguage === 'en' ? 'patients found' : 'អ្នកជំងឺរកឃើញ'}`);
+    };
+
+    /**
+     * Select patient from search dropdown
+     */
+    window.selectPatientFromSearch = function (patientId, patientName) {
+        const $select = $('#patientId');
+        const $searchInput = $('#patientSearchInput');
+        const $dropdown = $('#patientSearchResults');
+
+        // Set the select value
+        $select.val(patientId);
+
+        // Update search input with selected name
+        $searchInput.val(patientName);
+
+        // Hide dropdown
+        $dropdown.hide();
+
+        // Update helper text
+        const $helper = $searchInput.siblings('.form-helper');
+        $helper.text(currentLanguage === 'en' ? 'Patient selected' : 'បានជ្រើសរើសអ្នកជំងឺ');
+    };
+
+    // Close dropdown when clicking outside
+    $(document).on('click', function (e) {
+        if (!$(e.target).closest('#patientSearchInput, #patientSearchResults').length) {
+            $('#patientSearchResults').hide();
+        }
+    });
+
+    /**
+     * Calculate age (helper function for demo)
+     */
+    function calculateAge(patient) {
+        // Return random age for demo (in real app, calculate from DOB)
+        return Math.floor(Math.random() * 50) + 20;
+    }
+
+    // ====================
     // QUICK ACTION DROPDOWN
     // ====================
 
@@ -2191,14 +2334,8 @@ $(document).ready(function () {
             }
         });
 
-        // Filter primary button
-        const $newAppt = $('#newAppointmentBtn');
-        const perm = $newAppt.attr('data-permission');
-        if (canAccessPermission(perm)) {
-            $newAppt.show();
-        } else {
-            $newAppt.hide();
-        }
+        // DO NOT show/hide New Appointment button here
+        // It is controlled by date selection only (see handleDateClick and clearDateSelection)
     }
 
     $('.quick-action-item').click(function () {
@@ -2276,6 +2413,21 @@ $(document).ready(function () {
 
     holidaysCache = {};
     buddhistEventsCache = {};
+
+    // Render calendar and appointments on page load
+    renderCalendar();
+    renderAppointments();
+
+    // Hide New Appointment button initially (show only when date is selected)
+    $('#newAppointmentBtn').hide();
+
+    // Clear date selection when clicking outside of date cells
+    $(document).on('click', function (e) {
+        // Check if click is not on a day-cell or its children
+        if (!$(e.target).closest('.day-cell').length && selectedDate) {
+            clearDateSelection();
+        }
+    });
 
     // ====================
     // CURRENT VIEW STATE
@@ -4436,10 +4588,4 @@ $(document).ready(function () {
         else { renderCalendar(); renderAppointments(); }
         showNotification('Appointment booked successfully!', 'success');
     };
-
-    console.log('🔄 Initializing calendar...');
-    console.log('📅 Calendar body element:', $('#calendarBody').length);
-    renderCalendar();
-    console.log('📅 Calendar rendered');
-    console.log('✅ Khmer Lunar Calendar loaded successfully!');
 });
