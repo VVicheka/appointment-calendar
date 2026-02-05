@@ -13,6 +13,88 @@ A modern web-based appointment calendar system for dental/medical clinics, featu
 - **Slide Panel Forms**: All forms open in a slide-in panel for a seamless experience
 - **No Backend Required**: 100% static HTML/CSS/JS, no server needed
 
+## Project Structure
+
+```
+appointment_calendar/
+├── index.html              # Main HTML file
+├── styles.css              # Original monolithic CSS (preserved)
+├── styles-modular.css      # Entry point for modular CSS (uses @import)
+├── script.js               # Main application JavaScript
+├── appointments.json       # Sample appointment data
+├── README.md               # This file
+│
+├── css/                    # CSS Component Files
+│   ├── variables.css       # CSS custom properties (colors, statuses)
+│   ├── base.css            # Resets, typography, utility classes
+│   ├── header.css          # Header bar, navigation, view toggles
+│   ├── calendar.css        # Calendar grid, day cells, appointment pills
+│   ├── sidebar.css         # Appointments sidebar, filters
+│   ├── forms.css           # Slide panels, form inputs, patient search
+│   ├── search.css          # Search box, results dropdown
+│   ├── dashboard.css       # Dashboard stats, provider status, activity
+│   ├── timeline.css        # Timeline view, provider drawer
+│   ├── reports.css         # Daily report, modals
+│   ├── notifications.css   # Toast notifications, conflict warnings
+│   ├── responsive.css      # Media queries for all screen sizes
+│   └── print.css           # Print-specific styles
+│
+└── js/                     # JavaScript Component Files
+    ├── data/
+    │   ├── mockData.js     # Mock data (patients, providers, treatments)
+    │   └── translations.js # Text translations (English/Khmer)
+    ├── utils/
+    │   ├── dateUtils.js    # Date formatting and calculations
+    │   ├── holidayUtils.js # Holiday and Buddhist calendar functions
+    │   └── helpers.js      # General helper functions
+    ├── forms/              # Form HTML template generators
+    │   ├── formTemplates.js    # Patient, Lab Order, Employee, etc.
+    │   ├── appointmentForm.js  # Appointment form templates
+    │   └── paymentForm.js      # Payment form template
+    └── views/              # (Reserved for view components)
+```
+
+## JavaScript Component Architecture
+
+The JavaScript code is now modularized into component files that are loaded before the main script.js:
+
+### Data Components (js/data/)
+- **mockData.js**: Contains all mock data including patients, providers, treatment categories, appointment types, rooms, and follow-up rules
+- **translations.js**: English and Khmer translations for all UI text
+
+### Utility Components (js/utils/)
+- **dateUtils.js**: Date formatting, parsing, and calculation functions
+- **holidayUtils.js**: Cambodian holiday calculations and Buddhist calendar integration
+- **helpers.js**: General utility functions (notifications, ID generation, etc.)
+
+### Form Components (js/forms/)
+- **formTemplates.js**: HTML generators for patient, lab order, employee, prescription, and service forms
+- **appointmentForm.js**: Standard and enhanced (timeline quick-book) appointment forms
+- **paymentForm.js**: Payment collection form with calculation helpers
+
+### How It Works
+1. Component files are loaded before script.js
+2. They define global variables and functions
+3. script.js checks for external definitions and uses them if available
+4. Fallback inline definitions ensure the app works even if component files fail to load
+
+## CSS Component Architecture
+
+The CSS is now modularized using `@import` statements. This approach:
+- Works without any build tools or bundler
+- Organizes styles by component/feature
+- Makes maintenance easier
+- Preserves all original styling and functionality
+
+To switch between original and modular CSS, edit `index.html`:
+```html
+<!-- Use modular CSS (current) -->
+<link rel="stylesheet" href="styles-modular.css">
+
+<!-- Or use original monolithic CSS -->
+<link rel="stylesheet" href="styles.css">
+```
+
 ## Data Loading System
 
 ### Dual-Layer Architecture

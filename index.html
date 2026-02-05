@@ -16,8 +16,27 @@
     <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
 
-    <!-- Custom Styles -->
-    <link rel="stylesheet" href="styles.css?v=13">
+    <!-- Custom Styles (Modular) -->
+    <!-- 
+        The styles are now organized into component files:
+        - css/variables.css: CSS custom properties (colors, status, providers)
+        - css/base.css: Resets, typography, utility classes
+        - css/header.css: Header bar, navigation, view toggles
+        - css/calendar.css: Calendar grid, day cells, appointment pills
+        - css/sidebar.css: Appointments sidebar, filters
+        - css/forms.css: Slide panels, form inputs, patient search
+        - css/search.css: Search box, results dropdown
+        - css/dashboard.css: Dashboard stats, provider status, activity
+        - css/timeline.css: Timeline view, provider drawer
+        - css/reports.css: Daily report, modals
+        - css/notifications.css: Toast notifications, conflict warnings
+        - css/responsive.css: Media queries for all screen sizes
+        - css/print.css: Print-specific styles
+        
+        To use the modular CSS, change styles.css to styles-modular.css below.
+        The original monolithic styles.css is preserved for reference.
+    -->
+    <link rel="stylesheet" href="styles-modular.css?v=2">
 </head>
 
 <body>
@@ -623,8 +642,72 @@
     <!-- MomentKH Library -->
     <script src="https://cdn.jsdelivr.net/gh/ThyrithSor/momentkh@3.0.3/momentkh.js"></script>
 
-    <!-- Custom Script -->
-    <script src="script.js?v=5"></script>
+    <!-- 
+        =====================================================
+        JavaScript Component Architecture
+        =====================================================
+        
+        The application is now fully componentized:
+        
+        1. DATA LAYER (js/data/)
+           - mockData.js: Sample data for patients, providers, treatments
+           - translations.js: English/Khmer translations
+        
+        2. UTILITY LAYER (js/utils/)
+           - dateUtils.js: Date formatting and calculations
+           - holidayUtils.js: Cambodian holidays and Buddhist calendar
+           - helpers.js: Notifications, ID generation, utilities
+        
+        3. CORE LAYER (js/core/)
+           - state.js: Centralized state management (AppState)
+           - app.js: Main app initializer and orchestrator
+        
+        4. VIEW LAYER (js/views/)
+           - calendar.js: Calendar grid rendering
+           - timeline.js: Timeline view by provider
+           - dashboard.js: Stats, queue, and activity
+        
+        5. COMPONENT LAYER (js/components/)
+           - appointments.js: Appointment list and filtering
+           - search.js: Global search functionality
+           - slidePanel.js: Form panels for CRUD operations
+           - quickActions.js: Quick action dropdown menu
+           - dailyReport.js: Report generation and printing
+        
+        Load order is important! Dependencies must load first.
+    -->
+    
+    <!-- Data Components -->
+    <script src="js/data/mockData.js?v=4"></script>
+    <script src="js/data/translations.js?v=4"></script>
+    
+    <!-- Utility Components -->
+    <script src="js/utils/dateUtils.js?v=4"></script>
+    <script src="js/utils/holidayUtils.js?v=4"></script>
+    <script src="js/utils/helpers.js?v=4"></script>
+    
+    <!-- Form Components -->
+    <script src="js/forms/formTemplates.js?v=3"></script>
+    <script src="js/forms/appointmentForm.js?v=3"></script>
+    <script src="js/forms/paymentForm.js?v=3"></script>
+    
+    <!-- Core Layer -->
+    <script src="js/core/state.js?v=2"></script>
+    
+    <!-- View Components -->
+    <script src="js/views/calendar.js?v=3"></script>
+    <script src="js/views/timeline.js?v=2"></script>
+    <script src="js/views/dashboard.js?v=2"></script>
+    
+    <!-- UI Components -->
+    <script src="js/components/appointments.js?v=3"></script>
+    <script src="js/components/search.js?v=2"></script>
+    <script src="js/components/slidePanel.js?v=3"></script>
+    <script src="js/components/quickActions.js?v=2"></script>
+    <script src="js/components/dailyReport.js?v=2"></script>
+    
+    <!-- App Initializer (must load last) -->
+    <script src="js/core/app.js?v=2"></script>
 </body>
 
 </html>

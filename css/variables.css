@@ -1,0 +1,44 @@
+/* ========================================== */
+/* CSS VARIABLES */
+/* ========================================== */
+
+:root {
+    --calendar-green: #00b300;
+    --calendar-green-dark: #009900;
+    --holiday-red: #ff0000;
+    --event-blue: #0066cc;
+    --light-bg: #f8f9fa;
+    --border-color: #dee2e6;
+    --text-dark: #2c3e50;
+
+    /* Urgency-based colors */
+    --urgent: #ef4444;
+    --high: #f97316;
+    --normal: #3b82f6;
+    --low: #6b7280;
+    --active: #22c55e;
+
+    /* Old type colors (for backwards compatibility) */
+    --type-appointment: #3b82f6;
+    --type-followup: #f59e0b;
+    --type-queue: #06b6d4;
+    --type-finished: #22c55e;
+    --type-cancelled: #ef4444;
+
+    /* New status colors */
+    --status-scheduled: #3b82f6;
+    --status-arrived: #8b5cf6;
+    --status-ready: #f59e0b;
+    --status-in-treatment: #22c55e;
+    --status-completed: #10b981;
+    --status-needs-followup: #f97316;
+    --status-walk-in: #06b6d4;
+    --status-no-show: #6b7280;
+    --status-cancelled: #ef4444;
+
+    /* Provider colors */
+    --provider-1: #8b5cf6;
+    --provider-2: #ec4899;
+    --provider-3: #14b8a6;
+    --provider-4: #f97316;
+}

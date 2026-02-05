@@ -1,0 +1,206 @@
+/* ========================================== */
+/* MAIN LAYOUT */
+/* ========================================== */
+
+.calendar-container {
+    display: flex;
+    flex: 1;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+    min-height: 0;
+}
+
+/* ========================================== */
+/* CALENDAR SECTION */
+/* ========================================== */
+
+.calendar-main {
+    width: 55%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.calendar-weekdays-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: var(--calendar-green);
+    color: white;
+    font-weight: 700;
+    height: 36px;
+    flex-shrink: 0;
+    border-radius: 12px 12px 0 0;
+    overflow: hidden;
+}
+
+.weekday-cell {
+    padding: 0.5rem;
+    text-align: center;
+    border-right: 1px solid rgba(255, 255, 255, 0.2);
+    font-size: 0.85rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.2;
+    word-wrap: break-word;
+    overflow: hidden;
+}
+
+.weekday-cell:last-child {
+    border-right: none;
+}
+
+/* Calendar Body - Fixed height grid */
+.calendar-body {
+    flex: 1;
+    display: grid;
+    grid-template-rows: repeat(6, 1fr);
+}
+
+.calendar-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.calendar-row:last-child {
+    border-bottom: none;
+}
+
+/* ========================================== */
+/* DAY CELL */
+/* ========================================== */
+
+.day-cell {
+    border-right: 1px solid var(--border-color);
+    padding: 0.5rem;
+    background: white;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    border-radius: 20px;
+    margin: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.day-cell:hover {
+    background: #f0f8ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.day-cell:last-child {
+    border-right: none;
+}
+
+.day-cell.other-month {
+    background: #fafafa;
+    opacity: 0.6;
+}
+
+.day-cell.other-month .holiday-text,
+.day-cell.other-month .buddhist-event-text {
+    opacity: 1 !important;
+    font-weight: 600 !important;
+    color: #ff0000 !important;
+}
+
+.day-cell.other-month .day-number,
+.day-cell.other-month .lunar-date {
+    opacity: 0.5;
+}
+
+.day-cell.today {
+    background: #90EE90 !important;
+    box-shadow: 0 4px 16px rgba(144, 238, 144, 0.4);
+    font-weight: 600;
+}
+
+.day-cell.selected {
+    background: #e3f2fd !important;
+    border: 2px solid var(--calendar-green);
+    box-shadow: 0 4px 16px rgba(52, 211, 153, 0.3);
+    transform: scale(1.02);
+}
+
+.day-cell.weekend {
+    background: #f9f9f9;
+}
+
+.day-header-row {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    margin-bottom: 0.2rem;
+    gap: 4px;
+}
+
+.day-number {
+    font-size: 1.2rem;
+    font-weight: 600;
+    line-height: 1;
+    text-align: center;
+}
+
+.day-cell.holiday .day-number {
+    color: var(--holiday-red);
+}
+
+.buddhist-icon {
+    width: 14px;
+    height: 14px;
+}
+
+.lunar-date {
+    font-size: 0.65rem;
+    color: #555;
+    margin-bottom: 0.1rem;
+    font-weight: 500;
+    text-align: center;
+}
+
+.day-info {
+    font-size: 0.6rem;
+    line-height: 1.1;
+    margin-top: 0.1rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.holiday-text {
+    color: var(--holiday-red);
+    font-weight: 500;
+}
+
+.event-text {
+    color: var(--event-blue);
+    font-weight: 500;
+}
+
+.buddhist-event-text {
+    color: #9933cc;
+    font-weight: 500;
+}
+
+.special-day {
+    color: #666;
+    font-weight: 400;
+}
+
+.appointment-count {
+    display: inline-block;
+    background: var(--calendar-green);
+    color: white;
+    padding: 1px 5px;
+    border-radius: 10px;
+    font-size: 0.55rem;
+    font-weight: 600;
+    margin-top: 2px;
+}
