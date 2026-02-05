@@ -1,0 +1,33 @@
+/*
+ * Dental Appointment Calendar - Main Stylesheet
+ * This file imports all component stylesheets
+ * 
+ * Component files are organized by functionality:
+ * - variables.css: CSS custom properties (colors, status, providers)
+ * - base.css: Resets, typography, utility classes
+ * - header.css: Header bar, navigation, view toggles
+ * - calendar.css: Calendar grid, day cells, appointment pills
+ * - sidebar.css: Appointments sidebar, filters
+ * - forms.css: Slide panels, form inputs, patient search
+ * - search.css: Search box, results dropdown
+ * - dashboard.css: Dashboard stats, provider status, activity
+ * - timeline.css: Timeline view, provider drawer
+ * - reports.css: Daily report, modals
+ * - notifications.css: Toast notifications, conflict warnings
+ * - responsive.css: Media queries for all screen sizes
+ * - print.css: Print-specific styles
+ */
+
+@import url('css/variables.css');
+@import url('css/base.css');
+@import url('css/header.css');
+@import url('css/calendar.css');
+@import url('css/sidebar.css');
+@import url('css/forms.css');
+@import url('css/search.css');
+@import url('css/dashboard.css');
+@import url('css/timeline.css');
+@import url('css/reports.css');
+@import url('css/notifications.css');
+@import url('css/responsive.css');
+@import url('css/print.css');
