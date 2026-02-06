@@ -3,13 +3,13 @@
  * Main entry point that orchestrates all components
  */
 
-const App = (function() {
+const App = (function () {
     'use strict';
 
     // ========================
     // DATA LOADING
     // ========================
-    
+
     async function loadData() {
         try {
             const response = await fetch('appointments.json');
@@ -19,7 +19,7 @@ const App = (function() {
                 AppState.set('payments', data.payments || []);
                 AppState.set('dataLoadedFromJson', true);
                 console.log('✅ Loaded data from appointments.json');
-                
+
                 // Save to localStorage as backup
                 localStorage.setItem('calendar-appointments', JSON.stringify(data.appointments || []));
                 localStorage.setItem('calendar-payments', JSON.stringify(data.payments || []));
@@ -34,18 +34,18 @@ const App = (function() {
 
     function loadFromLocalStorage() {
         let storedAppointments = JSON.parse(localStorage.getItem('calendar-appointments')) || [];
-        
+
         // Filter out old format appointments
         const appointments = storedAppointments.filter(apt => apt.dateStart);
-        
+
         if (appointments.length !== storedAppointments.length) {
             console.log('🔧 Cleaned up old appointment data');
             localStorage.setItem('calendar-appointments', JSON.stringify(appointments));
         }
-        
+
         AppState.set('appointments', appointments);
         AppState.set('payments', JSON.parse(localStorage.getItem('calendar-payments')) || []);
-        
+
         // Use sample data if empty
         if (appointments.length === 0) {
             loadSampleData();
@@ -53,8 +53,8 @@ const App = (function() {
     }
 
     function loadSampleData() {
-        const sampleAppointments = typeof getSampleAppointments === 'function' 
-            ? getSampleAppointments() 
+        const sampleAppointments = typeof getSampleAppointments === 'function'
+            ? getSampleAppointments()
             : [
                 {
                     id: 1,
@@ -72,7 +72,7 @@ const App = (function() {
                     notes: 'New patient registration'
                 }
             ];
-        
+
         AppState.set('appointments', sampleAppointments);
         localStorage.setItem('calendar-appointments', JSON.stringify(sampleAppointments));
     }
@@ -80,34 +80,39 @@ const App = (function() {
     // ========================
     // VIEW SWITCHING
     // ========================
-    
+
     function switchView(view) {
         AppState.setView(view);
 
         // Update button states
         $('.view-btn').removeClass('active');
-        $(`#view${view.charAt(0).toUpperCase() + view.slice(1)}`).addClass('active');
+        if (view !== 'queue') {
+            $(`#view${view.charAt(0).toUpperCase() + view.slice(1)}`).addClass('active');
+        }
 
         // Show/hide sections
         $('#calendarMain, #appointmentsSidebar').toggle(view === 'calendar');
         $('#timelineSection').toggle(view === 'timeline');
         $('#dashboardSection').toggle(view === 'dashboard');
+        $('#queueSection').toggle(view === 'queue');
 
         // Render appropriate view
         if (view === 'timeline' && typeof TimelineView !== 'undefined') {
             TimelineView.render();
         } else if (view === 'dashboard' && typeof DashboardView !== 'undefined') {
             DashboardView.render();
+        } else if (view === 'queue' && typeof QueueView !== 'undefined') {
+            QueueView.render();
         }
     }
 
     // ========================
     // LANGUAGE TOGGLE
     // ========================
-    
+
     function toggleLanguage() {
         const newLang = AppState.toggleLanguage();
-        
+
         const flag = newLang === 'en' ? '🇬🇧' : '🇰🇭';
         const text = newLang === 'en' ? 'English' : 'ខ្មែរ';
         $('#langToggle').find('.lang-flag').text(flag);
@@ -120,9 +125,9 @@ const App = (function() {
         if (typeof AppointmentsManager !== 'undefined') {
             AppointmentsManager.updateSidebarTitle();
         }
-        
+
         populateProviderFilter();
-        
+
         if (typeof CalendarView !== 'undefined') {
             CalendarView.render();
         }
@@ -131,11 +136,11 @@ const App = (function() {
     // ========================
     // PROVIDER FILTER
     // ========================
-    
+
     function populateProviderFilter() {
         const currentLanguage = AppState.getLanguage();
         const selectedProviderIds = AppState.get('selectedProviderIds');
-        
+
         let html = '';
         mockProviders.forEach(p => {
             const isChecked = selectedProviderIds.includes(p.id) ? 'checked' : '';
@@ -147,7 +152,7 @@ const App = (function() {
                 </label>
             `;
         });
-        
+
         $('#providerFilterList').html(html);
     }
 
@@ -161,30 +166,32 @@ const App = (function() {
     // ========================
     // EVENT BINDING
     // ========================
-    
+
     function bindGlobalEvents() {
         // View toggle buttons
-        $('#viewCalendar').click(function() { switchView('calendar'); });
-        $('#viewTimeline').click(function() { switchView('timeline'); });
-        $('#viewDashboard').click(function() { switchView('dashboard'); });
+        $('#viewCalendar').click(function () { switchView('calendar'); });
+        $('#viewTimeline').click(function () { switchView('timeline'); });
+        $('#viewQueue').click(function () { switchView('queue'); });
+        $('#viewDashboard').click(function () { switchView('dashboard'); });
 
         // Language toggle
         $('#langToggle').click(toggleLanguage);
 
         // Provider filter toggle
-        $('#providerFilterBtn').click(function() {
-            $('#providerFilterList').toggle();
+        $('#filterProviderBtn').click(function (e) {
+            e.stopPropagation();
+            $('#filterProviderDropdown').toggle();
         });
 
         // Close provider filter when clicking outside
-        $(document).click(function(e) {
-            if (!$(e.target).closest('.provider-filter-wrapper').length) {
-                $('#providerFilterList').hide();
+        $(document).click(function (e) {
+            if (!$(e.target).closest('.header-provider-filter').length) {
+                $('#filterProviderDropdown').hide();
             }
         });
 
         // Escape key handler
-        $(document).keydown(function(e) {
+        $(document).keydown(function (e) {
             if (e.key === 'Escape') {
                 if (typeof SlidePanelComponent !== 'undefined') {
                     SlidePanelComponent.close();
@@ -196,7 +203,7 @@ const App = (function() {
         });
 
         // Filter checkboxes
-        $('#filterViewAll').on('change', function() {
+        $('#filterViewAll').on('change', function () {
             if ($(this).is(':checked')) {
                 $('.filter-type').prop('checked', false);
             }
@@ -205,7 +212,7 @@ const App = (function() {
             }
         });
 
-        $('.filter-type').on('change', function() {
+        $('.filter-type').on('change', function () {
             if ($(this).is(':checked')) {
                 $('#filterViewAll').prop('checked', false);
             }
@@ -218,7 +225,7 @@ const App = (function() {
     // ========================
     // INITIALIZATION
     // ========================
-    
+
     async function init() {
         console.log('🚀 Initializing Appointment Calendar...');
 
@@ -231,6 +238,9 @@ const App = (function() {
         }
         if (typeof TimelineView !== 'undefined') {
             TimelineView.bindEvents();
+        }
+        if (typeof QueueView !== 'undefined') {
+            QueueView.bindEvents();
         }
         if (typeof SlidePanelComponent !== 'undefined') {
             SlidePanelComponent.bindEvents();
@@ -279,7 +289,7 @@ const App = (function() {
 })();
 
 // Initialize on document ready
-$(document).ready(function() {
+$(document).ready(function () {
     App.init();
 });
 

@@ -7,6 +7,8 @@
     max-width: 420px;
     min-width: 320px;
     flex: 1;
+    z-index: 10;
+    overflow: visible;
 }
 
 .search-box {
@@ -64,7 +66,7 @@
     border-radius: 10px;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
     display: none;
-    z-index: 1000;
+    z-index: 20000;
     min-width: 180px;
     overflow: hidden;
 }
@@ -79,6 +81,7 @@
         opacity: 0;
         transform: translateY(-10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -105,6 +108,34 @@
     background: #f1f5f9;
     font-weight: 500;
     color: var(--primary-color);
+}
+
+/* Multi-select checkbox items */
+.search-scope-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: background 0.15s;
+    user-select: none;
+}
+
+.search-scope-item:hover {
+    background: #f8f9fa;
+}
+
+.search-scope-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--calendar-green);
+}
+
+.search-scope-item span {
+    font-size: 14px;
+    color: var(--text-primary);
+    font-weight: 500;
 }
 
 .search-input {
@@ -150,7 +181,7 @@
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
     max-height: 450px;
     overflow-y: auto;
-    z-index: 998;
+    z-index: 20000;
     display: none;
     animation: fadeIn 0.3s ease;
 }
@@ -160,6 +191,7 @@
         opacity: 0;
         transform: scale(0.98);
     }
+
     to {
         opacity: 1;
         transform: scale(1);

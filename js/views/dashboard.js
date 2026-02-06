@@ -3,17 +3,17 @@
  * Handles the dashboard with stats, queue, and activity
  */
 
-const DashboardView = (function() {
+const DashboardView = (function () {
     'use strict';
 
     // ========================
     // MAIN RENDER FUNCTION
     // ========================
-    
+
     function render() {
         const appointments = AppState.get('appointments');
         const payments = AppState.get('payments');
-        
+
         const today = new Date();
         const todayKey = formatDateKey(today);
         const now = new Date();
@@ -65,10 +65,10 @@ const DashboardView = (function() {
     // ========================
     // NOW SERVING SECTION
     // ========================
-    
+
     function renderNowServing(todayAppointments, now) {
         const inTreatment = todayAppointments.filter(apt => apt.type === 'in-treatment');
-        
+
         if (inTreatment.length > 0) {
             let html = '';
             inTreatment.forEach(apt => {
@@ -108,7 +108,7 @@ const DashboardView = (function() {
     // ========================
     // WAITING QUEUE SECTION
     // ========================
-    
+
     function renderWaitingQueue(todayAppointments, now) {
         const readyToSee = todayAppointments
             .filter(apt => apt.type === 'ready' || apt.type === 'arrived')
@@ -156,7 +156,7 @@ const DashboardView = (function() {
     // ========================
     // PROVIDER STATUS SECTION
     // ========================
-    
+
     function renderProviderStatus() {
         const appointments = AppState.get('appointments');
         const today = formatDateKey(new Date());
@@ -225,7 +225,7 @@ const DashboardView = (function() {
     // ========================
     // COMING SOON SECTION
     // ========================
-    
+
     function renderComingSoon(todayAppointments, now) {
         const twoHoursLater = new Date(now.getTime() + 2 * 60 * 60 * 1000);
         const comingSoon = todayAppointments.filter(apt => {
@@ -269,7 +269,7 @@ const DashboardView = (function() {
     // ========================
     // FOLLOW-UPS SECTION
     // ========================
-    
+
     function renderFollowUps(appointments, now) {
         const treatmentFollowUpRules = typeof window.treatmentFollowUpRules !== 'undefined' ? window.treatmentFollowUpRules : {
             'root-canal': { days: 7 },
@@ -343,7 +343,7 @@ const DashboardView = (function() {
     // ========================
     // RECENT ACTIVITY SECTION
     // ========================
-    
+
     function renderRecentActivity() {
         const appointments = AppState.get('appointments');
         const payments = AppState.get('payments');
@@ -427,7 +427,7 @@ const DashboardView = (function() {
     // ========================
     // ACTION HANDLERS
     // ========================
-    
+
     function startTreatment(id) {
         if (AppState.updateAppointment(id, { type: 'in-treatment' })) {
             render();
@@ -452,10 +452,27 @@ const DashboardView = (function() {
         alert(`Calling ${phone}...\n\nIn production, this would integrate with your phone system.`);
     }
 
+    function openQueueView() {
+        // Hide dashboard and show queue
+        $('#dashboardSection').hide();
+        $('#queueSection').show();
+
+        // Update view buttons
+        $('.view-btn').removeClass('active');
+
+        // Update state
+        AppState.set('currentView', 'queue');
+
+        // Render queue view
+        if (typeof QueueView !== 'undefined') {
+            QueueView.render();
+        }
+    }
+
     // ========================
     // HELPER FUNCTIONS
     // ========================
-    
+
     function formatDateKey(date) {
         if (typeof window.formatDateKey === 'function') {
             return window.formatDateKey(date);
@@ -485,7 +502,8 @@ const DashboardView = (function() {
         renderRecentActivity,
         startTreatment,
         bookFollowUp,
-        callPatient
+        callPatient,
+        openQueueView
     };
 })();
 
@@ -493,8 +511,8 @@ const DashboardView = (function() {
 window.DashboardView = DashboardView;
 
 // Global function aliases
-window.startTreatment = function(id) { DashboardView.startTreatment(id); };
-window.bookFollowUp = function(id) { DashboardView.bookFollowUp(id); };
-window.callPatient = function(phone) { DashboardView.callPatient(phone); };
-window.toggleProviderFilter = function() { $('#providerFilterDropdown').toggle(); };
-window.filterProviderStatus = function() { DashboardView.renderProviderStatus(); };
+window.startTreatment = function (id) { DashboardView.startTreatment(id); };
+window.bookFollowUp = function (id) { DashboardView.bookFollowUp(id); };
+window.callPatient = function (phone) { DashboardView.callPatient(phone); };
+window.toggleProviderFilter = function () { $('#providerFilterDropdown').toggle(); };
+window.filterProviderStatus = function () { DashboardView.renderProviderStatus(); };

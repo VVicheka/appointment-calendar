@@ -76,11 +76,26 @@
 
                 <!-- Scope Dropdown -->
                 <div class="search-scope-dropdown" id="searchScopeDropdown">
-                    <button data-scope="all" class="active">All</button>
-                    <button data-scope="appointments">Appointments</button>
-                    <button data-scope="patients">Patients</button>
-                    <button data-scope="queue">Queue</button>
-                    <button data-scope="followup">Follow-up</button>
+                    <label class="search-scope-item">
+                        <input type="checkbox" data-scope="all" checked>
+                        <span>All</span>
+                    </label>
+                    <label class="search-scope-item">
+                        <input type="checkbox" data-scope="appointments">
+                        <span>Appointments</span>
+                    </label>
+                    <label class="search-scope-item">
+                        <input type="checkbox" data-scope="patients">
+                        <span>Patients</span>
+                    </label>
+                    <label class="search-scope-item">
+                        <input type="checkbox" data-scope="queue">
+                        <span>Queue</span>
+                    </label>
+                    <label class="search-scope-item">
+                        <input type="checkbox" data-scope="followup">
+                        <span>Follow-up</span>
+                    </label>
                 </div>
 
                 <div class="search-results" id="searchResults"></div>
@@ -93,6 +108,9 @@
                 </button>
                 <button class="view-btn" id="viewTimeline" title="Timeline View">
                     <i class="fas fa-clock"></i>
+                </button>
+                <button class="view-btn" id="viewQueue" title="Queue View">
+                    <i class="fas fa-clipboard-list"></i>
                 </button>
                 <button class="view-btn" id="viewDashboard" title="Dashboard">
                     <i class="fas fa-chart-pie"></i>
@@ -207,10 +225,13 @@
                     </div>
 
                     <!-- Ready to See -->
-                    <div class="dashboard-card">
+                    <div class="dashboard-card dashboard-card-clickable" onclick="DashboardView.openQueueView()">
                         <div class="dashboard-card-header">
                             <i class="fas fa-clipboard-list"></i>
                             <span>Ready to See</span>
+                            <button class="card-expand-btn" title="View Full Queue">
+                                <i class="fas fa-expand"></i>
+                            </button>
                         </div>
                         <div class="dashboard-card-body" id="waitingQueue">
                             <div class="no-data">No patients waiting</div>
@@ -284,6 +305,84 @@
                             <div class="no-data">No recent activity</div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Queue Section (hidden by default) -->
+        <div class="queue-section" id="queueSection" style="display: none;">
+            <div class="queue-header">
+                <div class="queue-header-left">
+                    <button class="btn-back" onclick="QueueView.closeQueue()">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <h1 class="queue-title">
+                        <i class="fas fa-clipboard-list"></i>
+                        Patient Queue
+                    </h1>
+                    <button class="btn-refresh" onclick="QueueView.render()">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+
+                <div class="queue-header-center">
+                    <div class="queue-stats-mini" id="queueStats">
+                        <!-- Stats will be rendered here -->
+                    </div>
+                </div>
+
+                <div class="queue-header-right">
+                    <!-- Sort Options -->
+                    <div class="queue-sort-group">
+                        <span class="sort-label">Sort:</span>
+                        <button class="queue-sort-btn active" data-sort="priority"
+                            onclick="QueueView.setSortBy('priority')">
+                            <i class="fas fa-exclamation-triangle"></i> Priority
+                        </button>
+                        <button class="queue-sort-btn" data-sort="time" onclick="QueueView.setSortBy('time')">
+                            <i class="fas fa-clock"></i> Time
+                        </button>
+                        <button class="queue-sort-btn" data-sort="provider" onclick="QueueView.setSortBy('provider')">
+                            <i class="fas fa-user-md"></i> Provider
+                        </button>
+                    </div>
+
+                    <!-- Filter Dropdowns -->
+                    <div class="queue-filter-dropdown">
+                        <button class="queue-filter-btn" id="queueProviderFilterBtn">
+                            <i class="fas fa-user-md"></i>
+                            <span id="queueProviderFilterLabel">All Providers</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="queue-dropdown-menu" id="queueProviderDropdown" style="display: none;">
+                            <button class="dropdown-item active" onclick="QueueView.setFilterProvider('all')">All
+                                Providers</button>
+                        </div>
+                    </div>
+
+                    <div class="queue-filter-dropdown">
+                        <button class="queue-filter-btn" id="queueUrgencyFilterBtn">
+                            <i class="fas fa-filter"></i>
+                            <span id="queueUrgencyFilterLabel">All Urgency</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="queue-dropdown-menu" id="queueUrgencyDropdown" style="display: none;">
+                            <button class="dropdown-item active" onclick="QueueView.setFilterUrgency('all')">All
+                                Urgency</button>
+                            <button class="dropdown-item" onclick="QueueView.setFilterUrgency('urgent')">🔴 Urgent
+                                Only</button>
+                            <button class="dropdown-item" onclick="QueueView.setFilterUrgency('high')">🟠 High
+                                Priority</button>
+                            <button class="dropdown-item" onclick="QueueView.setFilterUrgency('normal')">🟡
+                                Normal</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="queue-content">
+                <div class="queue-list" id="queueList">
+                    <!-- Queue items will be rendered here -->
                 </div>
             </div>
         </div>
@@ -395,32 +494,27 @@
 
         <!-- Appointments Sidebar -->
         <div class="appointments-sidebar" id="appointmentsSidebar">
-            <div class="sidebar-header">
-                <div>
-                    <div class="sidebar-title" id="sidebarTitle">Appointments</div>
-                    <div class="sidebar-date-info" id="sidebarDateInfo"></div>
+            <!-- Appointments Header Controls -->
+            <div class="appointments-header-controls" id="appointmentsHeaderControls">
+                <div class="header-controls-left">
+                    <h2 class="appointments-title">Appointments</h2>
+                    <div class="appointments-month" id="appointmentsMonth"></div>
                 </div>
-                <!-- New Appointment Button -->
-                <button class="primary-action-btn" id="newAppointmentBtn" data-permission="staff">
-                    <i class="fas fa-calendar-plus"></i>
-                    <span class="action-label" data-en="New Appointment" data-kh="ការណាត់ជួបថ្មី">New Appointment</span>
-                </button>
-            </div>
-
-            <!-- Filters Section -->
-            <div class="appointment-filters">
-                <div class="filter-row">
-                    <label class="filter-checkbox">
+                <div class="header-controls-right">
+                    <!-- View All Toggle -->
+                    <label class="header-filter-checkbox">
                         <input type="checkbox" id="filterViewAll" checked>
                         <span class="checkmark"></span>
                         <span class="filter-label">View All</span>
                     </label>
-                    <div class="filter-provider-multi">
-                        <button type="button" class="filter-provider-btn" id="filterProviderBtn">
+
+                    <!-- Provider Filter -->
+                    <div class="header-provider-filter">
+                        <button type="button" class="header-provider-btn" id="filterProviderBtn">
                             <span id="filterProviderLabel">All providers</span>
                             <i class="fas fa-chevron-down"></i>
                         </button>
-                        <div class="filter-provider-dropdown" id="filterProviderDropdown">
+                        <div class="header-provider-dropdown" id="filterProviderDropdown" style="display: none;">
                             <div class="filter-provider-search">
                                 <i class="fas fa-search"></i>
                                 <input type="text" id="providerSearchInput" placeholder="Search providers..." />
@@ -436,46 +530,34 @@
                             </div>
                         </div>
                     </div>
-                </div>
-                <div class="filter-types">
-                    <label class="filter-checkbox">
-                        <input type="checkbox" class="filter-type" value="scheduled" checked>
-                        <span class="checkmark" style="color: #3b82f6;"></span>
-                        <span class="filter-label">Scheduled</span>
-                    </label>
-                    <label class="filter-checkbox">
-                        <input type="checkbox" class="filter-type" value="arrived" checked>
-                        <span class="checkmark" style="color: #8b5cf6;"></span>
-                        <span class="filter-label">Arrived</span>
-                    </label>
-                    <label class="filter-checkbox">
-                        <input type="checkbox" class="filter-type" value="ready" checked>
-                        <span class="checkmark" style="color: #f59e0b;"></span>
-                        <span class="filter-label">Ready</span>
-                    </label>
-                    <label class="filter-checkbox">
-                        <input type="checkbox" class="filter-type" value="in-treatment" checked>
-                        <span class="checkmark" style="color: #22c55e;"></span>
-                        <span class="filter-label">In Treatment</span>
-                    </label>
-                    <label class="filter-checkbox">
-                        <input type="checkbox" class="filter-type" value="completed" checked>
-                        <span class="checkmark" style="color: #10b981;"></span>
-                        <span class="filter-label">Completed</span>
-                    </label>
-                    <label class="filter-checkbox">
-                        <input type="checkbox" class="filter-type" value="needs-followup" checked>
-                        <span class="checkmark" style="color: #f97316;"></span>
-                        <span class="filter-label">Needs Follow-up</span>
-                    </label>
-                    <label class="filter-checkbox">
-                        <input type="checkbox" class="filter-type" value="cancelled">
-                        <span class="checkmark" style="color: #ef4444;"></span>
-                        <span class="filter-label">Cancelled</span>
-                    </label>
+
+                    <!-- Status Filters -->
+                    <div class="header-status-filters">
+                        <label class="header-filter-checkbox">
+                            <input type="checkbox" class="filter-type" value="scheduled" checked>
+                            <span class="checkmark" style="color: #3b82f6;"></span>
+                            <span class="filter-label">Scheduled</span>
+                        </label>
+                        <label class="header-filter-checkbox">
+                            <input type="checkbox" class="filter-type" value="cancelled">
+                            <span class="checkmark" style="color: #ef4444;"></span>
+                            <span class="filter-label">Cancelled</span>
+                        </label>
+                        <label class="header-filter-checkbox">
+                            <input type="checkbox" class="filter-type" value="appointment" checked>
+                            <span class="checkmark" style="color: #10b981;"></span>
+                            <span class="filter-label">Appointment</span>
+                        </label>
+                    </div>
+
+                    <!-- New Appointment Button -->
+                    <button class="header-action-btn" id="newAppointmentBtn" data-permission="staff">
+                        <i class="fas fa-calendar-plus"></i>
+                        <span class="action-label" data-en="New Appointment" data-kh="ការណាត់ជួបថ្មី">New
+                            Appointment</span>
+                    </button>
                 </div>
             </div>
-
             <div id="appointmentsList" class="appointments-list"></div>
         </div>
     </div>
@@ -676,36 +758,37 @@
         
         Load order is important! Dependencies must load first.
     -->
-    
+
     <!-- Data Components -->
     <script src="js/data/mockData.js?v=4"></script>
     <script src="js/data/translations.js?v=4"></script>
-    
+
     <!-- Utility Components -->
     <script src="js/utils/dateUtils.js?v=4"></script>
     <script src="js/utils/holidayUtils.js?v=4"></script>
     <script src="js/utils/helpers.js?v=4"></script>
-    
+
     <!-- Form Components -->
     <script src="js/forms/formTemplates.js?v=3"></script>
     <script src="js/forms/appointmentForm.js?v=3"></script>
     <script src="js/forms/paymentForm.js?v=3"></script>
-    
+
     <!-- Core Layer -->
     <script src="js/core/state.js?v=2"></script>
-    
+
     <!-- View Components -->
     <script src="js/views/calendar.js?v=3"></script>
     <script src="js/views/timeline.js?v=2"></script>
     <script src="js/views/dashboard.js?v=2"></script>
-    
+    <script src="js/views/queue.js?v=1"></script>
+
     <!-- UI Components -->
     <script src="js/components/appointments.js?v=3"></script>
     <script src="js/components/search.js?v=2"></script>
     <script src="js/components/slidePanel.js?v=3"></script>
     <script src="js/components/quickActions.js?v=2"></script>
     <script src="js/components/dailyReport.js?v=2"></script>
-    
+
     <!-- App Initializer (must load last) -->
     <script src="js/core/app.js?v=2"></script>
 </body>

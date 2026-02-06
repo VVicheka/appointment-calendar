@@ -3,23 +3,23 @@
  * Handles global search functionality across appointments, patients, queue, and follow-ups
  */
 
-const SearchComponent = (function() {
+const SearchComponent = (function () {
     'use strict';
 
     let searchTimeout;
-    let currentSearchScope = 'all';
+    let currentSearchScopes = ['all']; // Changed to array for multiple selections
 
     // ========================
     // INITIALIZATION
     // ========================
-    
+
     function init() {
         bindEvents();
     }
 
     function bindEvents() {
         // Search input handler
-        $('#globalSearch').on('input', function() {
+        $('#globalSearch').on('input', function () {
             const query = $(this).val().trim().toLowerCase();
 
             clearTimeout(searchTimeout);
@@ -38,33 +38,57 @@ const SearchComponent = (function() {
         });
 
         // Clear button
-        $('#searchClear').click(function() {
+        $('#searchClear').click(function () {
             $('#globalSearch').val('');
             $('#searchResults').hide();
             $(this).hide();
         });
 
         // Scope dropdown button
-        $('#searchScopeBtn').click(function(e) {
+        $('#searchScopeBtn').click(function (e) {
             e.stopPropagation();
             const isOpen = $('#searchScopeDropdown').hasClass('show');
             $('#searchScopeDropdown').toggleClass('show');
             $(this).attr('aria-expanded', !isOpen);
         });
 
-        // Scope selection
-        $('#searchScopeDropdown').on('click', 'button', function() {
+        // Scope checkbox selection (multi-select)
+        $('#searchScopeDropdown').on('change', 'input[type="checkbox"]', function () {
             const scope = $(this).data('scope');
             if (!scope) return;
 
-            currentSearchScope = scope;
-            $('#searchScopeLabel').text($(this).text());
+            if (scope === 'all') {
+                // If "All" is checked, uncheck others
+                if ($(this).is(':checked')) {
+                    currentSearchScopes = ['all'];
+                    $('#searchScopeDropdown input[type="checkbox"]').prop('checked', false);
+                    $(this).prop('checked', true);
+                } else {
+                    currentSearchScopes = [];
+                }
+            } else {
+                // If any specific scope is checked, uncheck "All"
+                $('#searchScopeDropdown input[data-scope="all"]').prop('checked', false);
 
-            $('#searchScopeDropdown').find('button').removeClass('active');
-            $(this).addClass('active');
+                // Update currentSearchScopes array
+                if ($(this).is(':checked')) {
+                    currentSearchScopes = currentSearchScopes.filter(s => s !== 'all');
+                    if (!currentSearchScopes.includes(scope)) {
+                        currentSearchScopes.push(scope);
+                    }
+                } else {
+                    currentSearchScopes = currentSearchScopes.filter(s => s !== scope);
+                }
 
-            $('#searchScopeDropdown').removeClass('show');
-            $('#searchScopeBtn').attr('aria-expanded', 'false');
+                // If nothing is selected, check "All"
+                if (currentSearchScopes.length === 0) {
+                    currentSearchScopes = ['all'];
+                    $('#searchScopeDropdown input[data-scope="all"]').prop('checked', true);
+                }
+            }
+
+            // Update label
+            updateScopeLabel();
 
             // Re-run search if there's a query
             const query = $('#globalSearch').val().trim();
@@ -74,7 +98,7 @@ const SearchComponent = (function() {
         });
 
         // Close dropdown when clicking outside
-        $(document).click(function(e) {
+        $(document).click(function (e) {
             if (!$(e.target).closest('.search-wrapper').length) {
                 $('#searchScopeDropdown').removeClass('show');
                 $('#searchScopeBtn').attr('aria-expanded', 'false');
@@ -83,7 +107,7 @@ const SearchComponent = (function() {
         });
 
         // Result card clicks
-        $(document).on('click', '.search-result-card', function() {
+        $(document).on('click', '.search-result-card', function () {
             const type = $(this).data('type');
             const id = $(this).data('id');
 
@@ -101,13 +125,29 @@ const SearchComponent = (function() {
         });
     }
 
+    function updateScopeLabel() {
+        if (currentSearchScopes.includes('all')) {
+            $('#searchScopeLabel').text('All');
+        } else if (currentSearchScopes.length === 1) {
+            const scopeLabels = {
+                'appointments': 'Appointments',
+                'patients': 'Patients',
+                'queue': 'Queue',
+                'followup': 'Follow-up'
+            };
+            $('#searchScopeLabel').text(scopeLabels[currentSearchScopes[0]] || 'All');
+        } else {
+            $('#searchScopeLabel').text(`${currentSearchScopes.length} selected`);
+        }
+    }
+
     // ========================
     // SEARCH LOGIC
     // ========================
-    
+
     function performSearch(query) {
         const appointments = AppState.get('appointments');
-        
+
         const results = {
             all: [],
             appointments: [],
@@ -117,7 +157,7 @@ const SearchComponent = (function() {
         };
 
         // Search patients
-        if (currentSearchScope === 'all' || currentSearchScope === 'patients') {
+        if (currentSearchScopes.includes('all') || currentSearchScopes.includes('patients')) {
             mockPatients.forEach(patient => {
                 if (patient.name.toLowerCase().includes(query) ||
                     patient.phone.includes(query)) {
@@ -142,7 +182,7 @@ const SearchComponent = (function() {
         }
 
         // Search appointments
-        if (currentSearchScope === 'all' || currentSearchScope === 'appointments') {
+        if (currentSearchScopes.includes('all') || currentSearchScopes.includes('appointments')) {
             appointments.forEach(apt => {
                 if (apt.patientName.toLowerCase().includes(query) ||
                     apt.providerName.toLowerCase().includes(query) ||
@@ -172,7 +212,7 @@ const SearchComponent = (function() {
         }
 
         // Search queue (appointments that are arrived/ready/in-treatment)
-        if (currentSearchScope === 'all' || currentSearchScope === 'queue') {
+        if (currentSearchScopes.includes('all') || currentSearchScopes.includes('queue')) {
             const queueStatuses = ['arrived', 'ready', 'in-treatment'];
             appointments.forEach(apt => {
                 if (queueStatuses.includes(apt.type) &&
@@ -203,7 +243,7 @@ const SearchComponent = (function() {
         }
 
         // Search follow-ups
-        if (currentSearchScope === 'all' || currentSearchScope === 'followup') {
+        if (currentSearchScopes.includes('all') || currentSearchScopes.includes('followup')) {
             appointments.forEach(apt => {
                 if (apt.type === 'needs-followup' &&
                     (apt.patientName.toLowerCase().includes(query) ||
@@ -241,13 +281,26 @@ const SearchComponent = (function() {
     // ========================
     // RENDER RESULTS
     // ========================
-    
+
     function renderResults(results) {
         const $container = $('#searchResults');
-        const displayResults = currentSearchScope === 'all' ? results.all : results[currentSearchScope];
+
+        // Combine results from all selected scopes
+        let displayResults = [];
+        if (currentSearchScopes.includes('all')) {
+            displayResults = results.all;
+        } else {
+            currentSearchScopes.forEach(scope => {
+                if (results[scope]) {
+                    displayResults = displayResults.concat(results[scope]);
+                }
+            });
+        }
 
         if (displayResults.length === 0) {
-            const filterLabel = currentSearchScope.charAt(0).toUpperCase() + currentSearchScope.slice(1);
+            const filterLabel = currentSearchScopes.length === 1
+                ? currentSearchScopes[0].charAt(0).toUpperCase() + currentSearchScopes[0].slice(1)
+                : 'results';
             $container.html(`<div class="search-no-results"><i class="fas fa-search"></i><p>No ${filterLabel} found</p><small>Try another filter or search term</small></div>`);
             $container.show();
             return;
@@ -373,7 +426,7 @@ const SearchComponent = (function() {
     // ========================
     // PATIENT HISTORY
     // ========================
-    
+
     function showPatientHistory(patientId) {
         const patient = mockPatients.find(p => p.id === patientId);
         if (!patient) return;
@@ -389,7 +442,7 @@ const SearchComponent = (function() {
     // ========================
     // HELPER FUNCTIONS
     // ========================
-    
+
     function getStatusColor(type) {
         const colors = {
             'scheduled': '#3b82f6',
@@ -434,4 +487,4 @@ const SearchComponent = (function() {
 
 // Expose globally
 window.SearchComponent = SearchComponent;
-window.showPatientHistory = function(id) { SearchComponent.showPatientHistory(id); };
+window.showPatientHistory = function (id) { SearchComponent.showPatientHistory(id); };
