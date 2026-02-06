@@ -70,6 +70,50 @@
 
 /* Tablets and Small Laptops */
 @media (max-width: 768px) {
+
+    /* Appointments Header Controls - Wrap on smaller screens */
+    .appointments-header-controls {
+        padding: 0.75rem 1rem;
+    }
+
+    .header-controls-left {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .header-controls-right {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .appointments-title {
+        font-size: 1.1rem;
+    }
+
+    .appointments-month {
+        font-size: 0.85rem;
+        padding: 3px 10px;
+    }
+
+    .header-provider-btn {
+        min-width: 120px;
+        font-size: 0.85rem;
+    }
+
+    .header-status-filters {
+        flex-wrap: wrap;
+    }
+
+    .header-filter-checkbox {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.6rem;
+    }
+
+    .header-action-btn {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.8rem;
+    }
+
     .search-box {
         min-width: 150px;
     }
@@ -227,6 +271,57 @@
 
 /* Mobile Phones */
 @media (max-width: 480px) {
+
+    /* Appointments Header Controls - Stack vertically */
+    .appointments-header-controls {
+        padding: 0.5rem;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .header-controls-left {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .appointments-title {
+        font-size: 1rem;
+    }
+
+    .appointments-month {
+        font-size: 0.8rem;
+        width: fit-content;
+    }
+
+    .header-controls-right {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+
+    .header-filter-checkbox,
+    .header-provider-btn,
+    .header-action-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .header-status-filters {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .header-filter-checkbox {
+        width: 100%;
+    }
+
+    .header-provider-dropdown {
+        left: 0;
+        right: 0;
+        min-width: 100%;
+    }
+
     .search-wrapper {
         display: none;
     }
@@ -387,7 +482,9 @@
 }
 
 /* High DPI Screens */
-@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+@media (-webkit-min-device-pixel-ratio: 2),
+(min-resolution: 192dpi) {
+
     .appointment-pill,
     .status-badge,
     .provider-badge {

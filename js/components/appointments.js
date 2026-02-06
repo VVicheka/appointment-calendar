@@ -3,13 +3,13 @@
  * Handles appointment listing, filtering, and priority calculation
  */
 
-const AppointmentsManager = (function() {
+const AppointmentsManager = (function () {
     'use strict';
 
     // ========================
     // PRIORITY CALCULATION
     // ========================
-    
+
     function calculatePriority(appointment) {
         let score = 0;
         const now = new Date();
@@ -61,22 +61,26 @@ const AppointmentsManager = (function() {
     // ========================
     // FILTERING
     // ========================
-    
+
     function getFiltered() {
         const currentDate = AppState.get('currentDate');
         const selectedDate = AppState.get('selectedDate');
         const selectedProviderIds = AppState.get('selectedProviderIds');
         const appointments = AppState.get('appointments');
-        
+
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth();
 
         // Get active filters
         const viewAll = $('#filterViewAll').is(':checked');
         const activeTypes = [];
-        $('.filter-type:checked').each(function() {
+        $('.filter-type:checked').each(function () {
             activeTypes.push($(this).val());
         });
+
+        // If 'appointment' filter is active, include all appointment types except cancelled
+        const showAllAppointments = activeTypes.includes('appointment');
+        const allAppointmentTypes = ['scheduled', 'arrived', 'ready', 'in-treatment', 'completed', 'needs-followup'];
 
         let filtered = appointments.filter(apt => {
             // Skip appointments without valid dateStart
@@ -94,7 +98,12 @@ const AppointmentsManager = (function() {
             }
 
             // Filter by type
-            if (!viewAll && !activeTypes.includes(apt.type)) return false;
+            if (!viewAll) {
+                // Check if appointment type matches any active filter
+                const typeMatches = activeTypes.includes(apt.type) ||
+                    (showAllAppointments && allAppointmentTypes.includes(apt.type));
+                if (!typeMatches) return false;
+            }
 
             // Filter by provider (multi-select)
             if (selectedProviderIds.length > 0 && !selectedProviderIds.includes(apt.providerId)) return false;
@@ -119,17 +128,18 @@ const AppointmentsManager = (function() {
     // ========================
     // SIDEBAR TITLE UPDATE
     // ========================
-    
+
     function updateSidebarTitle() {
         const currentLanguage = AppState.getLanguage();
         const title = currentLanguage === 'en' ? 'Appointments' : 'ការណាត់ជួប';
-        $('#sidebarTitle').text(title);
+        // Update header title instead of sidebar (title moved to header)
+        $('.appointments-title').text(title);
     }
 
     // ========================
     // RENDER APPOINTMENTS
     // ========================
-    
+
     function render() {
         const currentDate = AppState.get('currentDate');
         const selectedDate = AppState.get('selectedDate');
@@ -144,48 +154,16 @@ const AppointmentsManager = (function() {
             const dayName = translations[currentLanguage].daysFull[selectedDate.getDay()];
             const dayNum = selectedDate.getDate();
             const monthName = translations[currentLanguage].months[selectedDate.getMonth()];
-            $('#sidebarDateInfo').text(`${dayName}, ${dayNum} ${monthName} ${selectedDate.getFullYear()}`);
+            $('#appointmentsMonth').text(`${dayName}, ${dayNum} ${monthName} ${selectedDate.getFullYear()}`);
         } else {
             const monthName = translations[currentLanguage].months[month];
-            $('#sidebarDateInfo').text(`${monthName} ${year}`);
+            $('#appointmentsMonth').text(`${monthName} ${year}`);
         }
 
         // Get filtered appointments
         const filteredAppointments = getFiltered();
 
-        // Calculate daily summary
-        const totalCount = filteredAppointments.length;
-        const completedCount = filteredAppointments.filter(apt => apt.type === 'completed').length;
-        const scheduledCount = filteredAppointments.filter(apt => apt.type === 'scheduled').length;
-        const cancelledCount = filteredAppointments.filter(apt => apt.type === 'cancelled').length;
-
         let html = '';
-
-        // Add compact daily summary (only if there are appointments)
-        if (filteredAppointments.length > 0) {
-            html += `
-                <div class="daily-summary-compact">
-                    <div class="summary-item">
-                        <span class="summary-label">Total:</span>
-                        <span class="summary-value">${AppState.formatNumber(totalCount)}</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">Scheduled:</span>
-                        <span class="summary-value">${AppState.formatNumber(scheduledCount)}</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">Completed:</span>
-                        <span class="summary-value">${AppState.formatNumber(completedCount)}</span>
-                    </div>
-                    ${cancelledCount > 0 ? `
-                    <div class="summary-item">
-                        <span class="summary-label">Cancelled:</span>
-                        <span class="summary-value">${AppState.formatNumber(cancelledCount)}</span>
-                    </div>
-                    ` : ''}
-                </div>
-            `;
-        }
 
         if (filteredAppointments.length === 0) {
             html += `
@@ -211,7 +189,7 @@ const AppointmentsManager = (function() {
     function renderGroupedByProvider(filteredAppointments) {
         const currentLanguage = AppState.getLanguage();
         let html = '';
-        
+
         // Group by provider (doctor)
         const grouped = {};
         filteredAppointments.forEach(apt => {
@@ -238,27 +216,62 @@ const AppointmentsManager = (function() {
             const firstTime = times[0];
             const lastTime = times[times.length - 1];
 
-            html += `<div class="appointment-date-group">`;
             html += `
-                <div class="provider-group-header provider-${providerId}">
-                    <div class="provider-header-main">
-                        <i class="fas fa-user-md"></i>
-                        <div class="provider-header-info">
-                            <div class="provider-header-name">${providerName}</div>
-                            <div class="provider-header-meta">${AppState.formatNumber(providerAppointments.length)} appointments · ${AppState.formatNumber(firstTime)} - ${AppState.formatNumber(lastTime)}</div>
+                <div class="provider-group-container provider-${providerId}">
+                    <div class="provider-group-header">
+                        <div class="provider-header-main">
+                            <i class="fas fa-user-md"></i>
+                            <div class="provider-header-info">
+                                <div class="provider-header-name">${providerName}</div>
+                                <div class="provider-header-meta">${AppState.formatNumber(providerAppointments.length)} patients · ${AppState.formatNumber(firstTime)} - ${AppState.formatNumber(lastTime)}</div>
+                            </div>
                         </div>
                     </div>
-                </div>
+                    <div class="provider-patients-list">
             `;
 
             providerAppointments.forEach(apt => {
-                html += renderAppointmentCard(apt);
+                html += renderCompactPatientCard(apt);
             });
 
-            html += `</div>`;
+            html += `
+                    </div>
+                </div>
+            `;
         });
 
         return html;
+    }
+
+    function renderCompactPatientCard(apt) {
+        const timeStart = apt.dateStart.split(' ')[1] || '';
+        const timeEnd = apt.dateEnd ? apt.dateEnd.split(' ')[1] : '';
+
+        // Status badge text
+        const statusLabels = {
+            'scheduled': 'Scheduled',
+            'arrived': 'Arrived',
+            'ready': 'Ready',
+            'in-treatment': 'In Treatment',
+            'completed': 'Completed',
+            'needs-followup': 'Follow-up',
+            'walk-in': 'Walk-in',
+            'no-show': 'No-show',
+            'cancelled': 'Cancelled'
+        };
+        const statusLabel = statusLabels[apt.type] || apt.type;
+
+        return `
+            <div class="compact-patient-card status-${apt.type}" 
+                 onclick="SlidePanelComponent.openForEdit(${apt.id})" 
+                 data-appointment-id="${apt.id}">
+                <div class="compact-patient-info">
+                    <div class="compact-patient-name">${apt.patientName}</div>
+                    <div class="compact-patient-time">${AppState.formatNumber(timeStart)}${timeEnd ? ' - ' + AppState.formatNumber(timeEnd) : ''}</div>
+                </div>
+                <span class="compact-status-badge badge-${apt.type}">${statusLabel}</span>
+            </div>
+        `;
     }
 
     function renderAppointmentCard(apt) {
@@ -317,7 +330,7 @@ const AppointmentsManager = (function() {
     // ========================
     // CONFLICT CHECKING
     // ========================
-    
+
     function checkConflicts(newApt, excludeId = null) {
         const appointments = AppState.get('appointments');
         const dateKey = newApt.dateStart.split(' ')[0];
@@ -365,7 +378,7 @@ const AppointmentsManager = (function() {
     // ========================
     // HELPER FUNCTIONS
     // ========================
-    
+
     function formatDateKey(date) {
         if (typeof window.formatDateKey === 'function') {
             return window.formatDateKey(date);
