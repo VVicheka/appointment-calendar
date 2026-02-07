@@ -78,9 +78,10 @@ const AppointmentsManager = (function () {
             activeTypes.push($(this).val());
         });
 
-        // If 'appointment' filter is active, include all appointment types except cancelled
-        const showAllAppointments = activeTypes.includes('appointment');
-        const allAppointmentTypes = ['scheduled', 'arrived', 'ready', 'in-treatment', 'completed', 'needs-followup'];
+        // Map filter categories to appointment types
+        const appointmentTypes = ['scheduled'];
+        const queueTypes = ['arrived', 'ready', 'in-treatment', 'completed', 'walk-in', 'needs-followup', 'no-show'];
+        const cancelledTypes = ['cancelled'];
 
         let filtered = appointments.filter(apt => {
             // Skip appointments without valid dateStart
@@ -97,12 +98,12 @@ const AppointmentsManager = (function () {
                 if (aptDate.getFullYear() !== year || aptDate.getMonth() !== month) return false;
             }
 
-            // Filter by type
+            // Filter by type category
             if (!viewAll) {
-                // Check if appointment type matches any active filter
-                const typeMatches = activeTypes.includes(apt.type) ||
-                    (showAllAppointments && allAppointmentTypes.includes(apt.type));
-                if (!typeMatches) return false;
+                const showAppointment = activeTypes.includes('appointment') && appointmentTypes.includes(apt.type);
+                const showQueue = activeTypes.includes('queue') && queueTypes.includes(apt.type);
+                const showCancelled = activeTypes.includes('cancelled') && cancelledTypes.includes(apt.type);
+                if (!showAppointment && !showQueue && !showCancelled) return false;
             }
 
             // Filter by provider (multi-select)
@@ -243,35 +244,60 @@ const AppointmentsManager = (function () {
         return html;
     }
 
+    function getStatusCategory(type) {
+        if (type === 'cancelled') return 'cancelled';
+        if (type === 'scheduled') return 'appointment';
+        return 'queue';
+    }
+
     function renderCompactPatientCard(apt) {
         const timeStart = apt.dateStart.split(' ')[1] || '';
         const timeEnd = apt.dateEnd ? apt.dateEnd.split(' ')[1] : '';
 
-        // Status badge text
-        const statusLabels = {
-            'scheduled': 'Scheduled',
-            'arrived': 'Arrived',
-            'ready': 'Ready',
-            'in-treatment': 'In Treatment',
-            'completed': 'Completed',
-            'needs-followup': 'Follow-up',
-            'walk-in': 'Walk-in',
-            'no-show': 'No-show',
+        const category = getStatusCategory(apt.type);
+        const categoryLabels = {
+            'appointment': 'Appointment',
+            'queue': 'Queue',
             'cancelled': 'Cancelled'
         };
-        const statusLabel = statusLabels[apt.type] || apt.type;
+        const statusLabel = categoryLabels[category];
+
+        // Build status action buttons based on current status
+        const actionButtons = getStatusActions(apt);
 
         return `
-            <div class="compact-patient-card status-${apt.type}" 
-                 onclick="SlidePanelComponent.openForEdit(${apt.id})" 
+            <div class="compact-patient-card status-${category}"
+                 onclick="SlidePanelComponent.openForEdit(${apt.id})"
                  data-appointment-id="${apt.id}">
                 <div class="compact-patient-info">
                     <div class="compact-patient-name">${apt.patientName}</div>
                     <div class="compact-patient-time">${AppState.formatNumber(timeStart)}${timeEnd ? ' - ' + AppState.formatNumber(timeEnd) : ''}</div>
                 </div>
-                <span class="compact-status-badge badge-${apt.type}">${statusLabel}</span>
+                <span class="compact-status-badge badge-${category}">${statusLabel}</span>
+                <div class="compact-card-actions">
+                    ${actionButtons}
+                </div>
             </div>
         `;
+    }
+
+    function getStatusActions(apt) {
+        const id = apt.id;
+        const category = getStatusCategory(apt.type);
+        let buttons = '';
+
+        if (category === 'appointment') {
+            // Appointment → can move to Queue or Cancel
+            buttons += `<button class="status-action-btn btn-ready" onclick="event.stopPropagation(); AppointmentsManager.quickStatusChange(${id}, 'arrived')" title="Move to Queue"><i class="fas fa-user-clock"></i></button>`;
+            buttons += `<button class="status-action-btn btn-cancel" onclick="event.stopPropagation(); AppointmentsManager.quickStatusChange(${id}, 'cancelled')" title="Cancel"><i class="fas fa-times"></i></button>`;
+        } else if (category === 'queue') {
+            // Queue → can Complete or Cancel
+            buttons += `<button class="status-action-btn btn-complete" onclick="event.stopPropagation(); AppointmentsManager.quickStatusChange(${id}, 'completed')" title="Complete"><i class="fas fa-check"></i></button>`;
+            buttons += `<button class="status-action-btn btn-cancel" onclick="event.stopPropagation(); AppointmentsManager.quickStatusChange(${id}, 'cancelled')" title="Cancel"><i class="fas fa-times"></i></button>`;
+        }
+        // Cancelled → no actions
+
+        return buttons;
     }
 
     function renderAppointmentCard(apt) {

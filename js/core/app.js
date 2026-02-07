@@ -153,13 +153,49 @@ const App = (function () {
             `;
         });
 
-        $('#providerFilterList').html(html);
+        const $list = $('#filterProviderList');
+        $list.html(html);
     }
 
     function toggleProvider(providerId) {
         AppState.toggleProviderFilter(providerId);
+        updateProviderLabel();
         if (typeof AppointmentsManager !== 'undefined') {
             AppointmentsManager.render();
+        }
+    }
+
+    function selectAllProviderFilter() {
+        mockProviders.forEach(p => {
+            if (!AppState.get('selectedProviderIds').includes(p.id)) {
+                AppState.toggleProviderFilter(p.id);
+            }
+        });
+        populateProviderFilter();
+        updateProviderLabel();
+        if (typeof AppointmentsManager !== 'undefined') {
+            AppointmentsManager.render();
+        }
+    }
+
+    function clearAllProviderFilter() {
+        AppState.clearProviderFilters();
+        populateProviderFilter();
+        updateProviderLabel();
+        if (typeof AppointmentsManager !== 'undefined') {
+            AppointmentsManager.render();
+        }
+    }
+
+    function updateProviderLabel() {
+        const selected = AppState.get('selectedProviderIds');
+        if (selected.length === 0) {
+            $('#filterProviderLabel').text('All providers');
+        } else if (selected.length === 1) {
+            const provider = mockProviders.find(p => p.id === selected[0]);
+            $('#filterProviderLabel').text(provider ? provider.name : '1 provider');
+        } else {
+            $('#filterProviderLabel').text(selected.length + ' providers');
         }
     }
 
@@ -178,16 +214,36 @@ const App = (function () {
         $('#langToggle').click(toggleLanguage);
 
         // Provider filter toggle
-        $('#filterProviderBtn').click(function (e) {
+        $(document).on('click', '#filterProviderBtn', function (e) {
             e.stopPropagation();
-            $('#filterProviderDropdown').toggle();
+            const $dropdown = $('#filterProviderDropdown');
+            if ($dropdown.is(':visible')) {
+                $dropdown.hide();
+            } else {
+                // Position dropdown below the button using fixed positioning
+                const btnRect = this.getBoundingClientRect();
+                $dropdown.css({
+                    display: 'block',
+                    top: btnRect.bottom + 4 + 'px',
+                    left: btnRect.left + 'px'
+                });
+            }
         });
 
         // Close provider filter when clicking outside
-        $(document).click(function (e) {
+        $(document).on('click', function (e) {
             if (!$(e.target).closest('.header-provider-filter').length) {
                 $('#filterProviderDropdown').hide();
             }
+        });
+
+        // Provider search in sidebar dropdown
+        $(document).on('input', '#sidebarProviderSearch', function () {
+            const search = $(this).val().trim().toLowerCase();
+            $('#filterProviderList .provider-filter-item').each(function () {
+                const text = $(this).text().toLowerCase();
+                $(this).toggleClass('search-hidden', !text.includes(search));
+            });
         });
 
         // Escape key handler
@@ -204,18 +260,18 @@ const App = (function () {
 
         // Filter checkboxes
         $('#filterViewAll').on('change', function () {
-            if ($(this).is(':checked')) {
-                $('.filter-type').prop('checked', false);
-            }
+            // When "All" is checked, check all status filters too
+            $('.filter-type').prop('checked', $(this).is(':checked'));
             if (typeof AppointmentsManager !== 'undefined') {
                 AppointmentsManager.render();
             }
         });
 
         $('.filter-type').on('change', function () {
-            if ($(this).is(':checked')) {
-                $('#filterViewAll').prop('checked', false);
-            }
+            // If all status filters are checked, also check "View All"
+            // If any is unchecked, uncheck "View All"
+            const allChecked = $('.filter-type').length === $('.filter-type:checked').length;
+            $('#filterViewAll').prop('checked', allChecked);
             if (typeof AppointmentsManager !== 'undefined') {
                 AppointmentsManager.render();
             }
@@ -284,7 +340,9 @@ const App = (function () {
         switchView,
         toggleLanguage,
         toggleProvider,
-        populateProviderFilter
+        populateProviderFilter,
+        selectAllProviderFilter,
+        clearAllProviderFilter
     };
 })();
 

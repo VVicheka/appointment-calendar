@@ -1,7 +1,7 @@
 /*
  * Dental Appointment Calendar - Main Stylesheet
  * This file imports all component stylesheets
- * 
+ *
  * Component files are organized by functionality:
  * - variables.css: CSS custom properties (colors, status, providers)
  * - base.css: Resets, typography, utility classes
@@ -18,16 +18,16 @@
  * - print.css: Print-specific styles
  */
 
-@import url('css/variables.css');
-@import url('css/base.css');
-@import url('css/header.css');
-@import url('css/calendar.css');
-@import url('css/sidebar.css');
-@import url('css/forms.css');
-@import url('css/search.css');
-@import url('css/dashboard.css');
-@import url('css/timeline.css');
-@import url('css/reports.css');
-@import url('css/notifications.css');
-@import url('css/responsive.css');
-@import url('css/print.css');
+@import url('css/variables.css?v=4');
+@import url('css/base.css?v=3');
+@import url('css/header.css?v=7');
+@import url('css/calendar.css?v=3');
+@import url('css/sidebar.css?v=5');
+@import url('css/forms.css?v=3');
+@import url('css/search.css?v=3');
+@import url('css/dashboard.css?v=3');
+@import url('css/timeline.css?v=3');
+@import url('css/reports.css?v=3');
+@import url('css/notifications.css?v=3');
+@import url('css/responsive.css?v=3');
+@import url('css/print.css?v=3');
