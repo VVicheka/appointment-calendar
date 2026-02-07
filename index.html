@@ -36,13 +36,15 @@
         To use the modular CSS, change styles.css to styles-modular.css below.
         The original monolithic styles.css is preserved for reference.
     -->
-    <link rel="stylesheet" href="styles-modular.css?v=2">
+    <link rel="stylesheet" href="styles-modular.css?v=10">
 </head>
 
 <body>
     <!-- Header -->
     <div class="calendar-header-bar">
         <div class="header-nav">
+            <h2 class="appointments-title home-link" id="homeLink" title="Go to Home" style="cursor:pointer;">Appointments</h2>
+            <span class="header-divider">|</span>
             <button class="nav-arrow btn-prev-month">
                 <i class="fas fa-chevron-left"></i>
             </button>
@@ -53,7 +55,6 @@
                 <i class="fas fa-chevron-right"></i>
             </button>
             <h1 class="header-title" id="headerTitle"></h1>
-
             <div class="lunar-info" id="lunarInfo"></div>
         </div>
         <div class="header-info">
@@ -496,67 +497,43 @@
         <div class="appointments-sidebar" id="appointmentsSidebar">
             <!-- Appointments Header Controls -->
             <div class="appointments-header-controls" id="appointmentsHeaderControls">
-                <div class="header-controls-left">
-                    <h2 class="appointments-title">Appointments</h2>
-                    <div class="appointments-month" id="appointmentsMonth"></div>
-                </div>
-                <div class="header-controls-right">
-                    <!-- View All Toggle -->
-                    <label class="header-filter-checkbox">
-                        <input type="checkbox" id="filterViewAll" checked>
-                        <span class="checkmark"></span>
-                        <span class="filter-label">View All</span>
-                    </label>
+                <div class="appointments-month" id="appointmentsMonth"></div>
 
-                    <!-- Provider Filter -->
-                    <div class="header-provider-filter">
-                        <button type="button" class="header-provider-btn" id="filterProviderBtn">
-                            <span id="filterProviderLabel">All providers</span>
-                            <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <div class="header-provider-dropdown" id="filterProviderDropdown" style="display: none;">
-                            <div class="filter-provider-search">
-                                <i class="fas fa-search"></i>
-                                <input type="text" id="providerSearchInput" placeholder="Search providers..." />
-                            </div>
-                            <div class="filter-provider-actions">
-                                <button type="button" class="filter-action-btn" onclick="selectAllProviders()">Select
-                                    all</button>
-                                <button type="button" class="filter-action-btn"
-                                    onclick="clearAllProvidersFilter()">Clear</button>
-                            </div>
-                            <div class="filter-provider-list" id="filterProviderList">
-                                <!-- Populated by JS -->
-                            </div>
-                        </div>
-                    </div>
+                <label class="header-filter-checkbox filter-all">
+                    <input type="checkbox" id="filterViewAll" checked>
+                    <span class="filter-label">All</span>
+                </label>
 
-                    <!-- Status Filters -->
-                    <div class="header-status-filters">
-                        <label class="header-filter-checkbox">
-                            <input type="checkbox" class="filter-type" value="scheduled" checked>
-                            <span class="checkmark" style="color: #3b82f6;"></span>
-                            <span class="filter-label">Scheduled</span>
-                        </label>
-                        <label class="header-filter-checkbox">
-                            <input type="checkbox" class="filter-type" value="cancelled">
-                            <span class="checkmark" style="color: #ef4444;"></span>
-                            <span class="filter-label">Cancelled</span>
-                        </label>
-                        <label class="header-filter-checkbox">
-                            <input type="checkbox" class="filter-type" value="appointment" checked>
-                            <span class="checkmark" style="color: #10b981;"></span>
-                            <span class="filter-label">Appointment</span>
-                        </label>
-                    </div>
-
-                    <!-- New Appointment Button -->
-                    <button class="header-action-btn" id="newAppointmentBtn" data-permission="staff">
-                        <i class="fas fa-calendar-plus"></i>
-                        <span class="action-label" data-en="New Appointment" data-kh="ការណាត់ជួបថ្មី">New
-                            Appointment</span>
+                <div class="header-provider-filter">
+                    <button type="button" class="header-provider-btn" id="filterProviderBtn">
+                        <span id="filterProviderLabel">Providers</span>
+                        <i class="fas fa-chevron-down"></i>
                     </button>
+                    <div class="header-provider-dropdown" id="filterProviderDropdown">
+                        <div class="filter-provider-search">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="sidebarProviderSearch" placeholder="Search providers..." />
+                        </div>
+                        <div class="filter-provider-list" id="filterProviderList"></div>
+                    </div>
                 </div>
+
+                <label class="header-filter-checkbox filter-appointment">
+                    <input type="checkbox" class="filter-type" value="appointment" checked>
+                    <span class="filter-label">Appointment</span>
+                </label>
+                <label class="header-filter-checkbox filter-queue">
+                    <input type="checkbox" class="filter-type" value="queue" checked>
+                    <span class="filter-label">Queue</span>
+                </label>
+                <label class="header-filter-checkbox filter-cancelled">
+                    <input type="checkbox" class="filter-type" value="cancelled" checked>
+                    <span class="filter-label">Cancelled</span>
+                </label>
+
+                <button class="header-action-btn" id="newAppointmentBtn" data-permission="staff">
+                    <i class="fas fa-plus"></i>
+                </button>
             </div>
             <div id="appointmentsList" class="appointments-list"></div>
         </div>
@@ -783,14 +760,31 @@
     <script src="js/views/queue.js?v=1"></script>
 
     <!-- UI Components -->
-    <script src="js/components/appointments.js?v=3"></script>
+    <script src="js/components/appointments.js?v=5"></script>
     <script src="js/components/search.js?v=2"></script>
     <script src="js/components/slidePanel.js?v=3"></script>
     <script src="js/components/quickActions.js?v=2"></script>
     <script src="js/components/dailyReport.js?v=2"></script>
 
     <!-- App Initializer (must load last) -->
-    <script src="js/core/app.js?v=2"></script>
+    <script src="js/core/app.js?v=6"></script>
+        <script>
+        // Make Appointments title act as Home: refresh and go to default page
+        document.addEventListener('DOMContentLoaded', function() {
+            var homeLink = document.getElementById('homeLink');
+            if (homeLink) {
+                homeLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    // If you have a function to reset to home, call it here. Otherwise, reload:
+                    if (typeof App !== 'undefined' && typeof App.goHome === 'function') {
+                        App.goHome();
+                    } else {
+                        window.location.reload();
+                    }
+                });
+            }
+        });
+        </script>
 </body>
 
 </html>

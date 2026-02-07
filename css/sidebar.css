@@ -124,21 +124,28 @@
     overflow: hidden;
 }
 
-.provider-group-container.provider-1 {
-    border-left-color: var(--provider-1);
-}
+.provider-group-container.provider-1 { border-left-color: var(--provider-1); }
+.provider-group-container.provider-2 { border-left-color: var(--provider-2); }
+.provider-group-container.provider-3 { border-left-color: var(--provider-3); }
+.provider-group-container.provider-4 { border-left-color: var(--provider-4); }
+.provider-group-container.provider-5 { border-left-color: var(--provider-5); }
+.provider-group-container.provider-6 { border-left-color: var(--provider-6); }
+.provider-group-container.provider-7 { border-left-color: var(--provider-7); }
+.provider-group-container.provider-8 { border-left-color: var(--provider-8); }
+.provider-group-container.provider-9 { border-left-color: var(--provider-9); }
+.provider-group-container.provider-10 { border-left-color: var(--provider-10); }
 
-.provider-group-container.provider-2 {
-    border-left-color: var(--provider-2);
-}
-
-.provider-group-container.provider-3 {
-    border-left-color: var(--provider-3);
-}
-
-.provider-group-container.provider-4 {
-    border-left-color: var(--provider-4);
-}
+/* Provider color accent on doctor icon */
+.provider-group-container.provider-1 .provider-group-header i { color: var(--provider-1); }
+.provider-group-container.provider-2 .provider-group-header i { color: var(--provider-2); }
+.provider-group-container.provider-3 .provider-group-header i { color: var(--provider-3); }
+.provider-group-container.provider-4 .provider-group-header i { color: var(--provider-4); }
+.provider-group-container.provider-5 .provider-group-header i { color: var(--provider-5); }
+.provider-group-container.provider-6 .provider-group-header i { color: var(--provider-6); }
+.provider-group-container.provider-7 .provider-group-header i { color: var(--provider-7); }
+.provider-group-container.provider-8 .provider-group-header i { color: var(--provider-8); }
+.provider-group-container.provider-9 .provider-group-header i { color: var(--provider-9); }
+.provider-group-container.provider-10 .provider-group-header i { color: var(--provider-10); }
 
 /* ========================================== */
 /* PROVIDER GROUP HEADER */
@@ -220,78 +227,39 @@
 /* ========================================== */
 
 .provider-patients-list {
-    padding: 1rem;
+    padding: 0.75rem 1rem;
     display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    gap: 0.75rem;
+    flex-direction: column;
+    gap: 0.5rem;
     background: #fafbfc;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
-}
-
-.provider-patients-list::-webkit-scrollbar {
-    height: 8px;
-}
-
-.provider-patients-list::-webkit-scrollbar-track {
-    background: #e9ecef;
-    border-radius: 4px;
-}
-
-.provider-patients-list::-webkit-scrollbar-thumb {
-    background: #adb5bd;
-    border-radius: 4px;
-}
-
-.provider-patients-list::-webkit-scrollbar-thumb:hover {
-    background: #868e96;
 }
 
 .compact-patient-card {
     background: #ffffff;
-    border: 2px solid #e5e7eb;
+    border: 1px solid #e5e7eb;
     border-left: 4px solid #10b981;
-    padding: 0.85rem 1rem;
-    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
     display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    align-items: center;
+    gap: 0.75rem;
     cursor: pointer;
     transition: all 0.2s ease;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
-    flex: 0 0 auto;
-    min-width: 200px;
-    max-width: 250px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .compact-patient-card:hover {
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
-    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
     border-color: #d1d5db;
 }
 
-.compact-patient-card.status-scheduled {
+.compact-patient-card.status-appointment {
     border-left-color: #3b82f6;
 }
 
-.compact-patient-card.status-arrived {
-    border-left-color: #8b5cf6;
-}
-
-.compact-patient-card.status-ready {
+.compact-patient-card.status-queue {
     border-left-color: #f59e0b;
-}
-
-.compact-patient-card.status-in-treatment {
-    border-left-color: #22c55e;
-}
-
-.compact-patient-card.status-completed {
-    border-left-color: #10b981;
-    background: rgba(16, 185, 129, 0.03);
 }
 
 .compact-patient-card.status-cancelled {
@@ -301,53 +269,100 @@
 
 .compact-patient-info {
     flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    min-width: 0;
 }
 
 .compact-patient-name {
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     font-weight: 600;
     color: #1f2937;
-    display: flex;
-    align-items: center;
-}
-
-.compact-patient-name::before {
-    content: '👤';
-    margin-right: 6px;
-    font-size: 1rem;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .compact-patient-time {
-    font-size: 0.85rem;
+    font-size: 0.78rem;
     color: #6b7280;
     font-weight: 500;
-    padding: 6px 10px;
-    background: #f3f4f6;
-    border-radius: 8px;
-    text-align: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-}
-
-.compact-patient-time::before {
-    content: '🕐';
-    font-size: 0.9rem;
 }
 
 .compact-status-badge {
-    padding: 5px 12px;
-    border-radius: 14px;
-    font-size: 0.7rem;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.65rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.3px;
-    text-align: center;
-    align-self: stretch;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* Status update buttons on each card */
+.compact-card-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.compact-card-actions .status-action-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+    background: #f9fafb;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    transition: all 0.2s;
+    color: #6b7280;
+}
+
+.compact-card-actions .status-action-btn:hover {
+    transform: scale(1.1);
+}
+
+.compact-card-actions .status-action-btn.btn-arrive {
+    color: #8b5cf6;
+    border-color: #ede9fe;
+}
+.compact-card-actions .status-action-btn.btn-arrive:hover {
+    background: #ede9fe;
+}
+
+.compact-card-actions .status-action-btn.btn-ready {
+    color: #d97706;
+    border-color: #fef3c7;
+}
+.compact-card-actions .status-action-btn.btn-ready:hover {
+    background: #fef3c7;
+}
+
+.compact-card-actions .status-action-btn.btn-treat {
+    color: #059669;
+    border-color: #d1fae5;
+}
+.compact-card-actions .status-action-btn.btn-treat:hover {
+    background: #d1fae5;
+}
+
+.compact-card-actions .status-action-btn.btn-complete {
+    color: #047857;
+    border-color: #d1fae5;
+}
+.compact-card-actions .status-action-btn.btn-complete:hover {
+    background: #d1fae5;
+}
+
+.compact-card-actions .status-action-btn.btn-cancel {
+    color: #dc2626;
+    border-color: #fee2e2;
+}
+.compact-card-actions .status-action-btn.btn-cancel:hover {
+    background: #fee2e2;
 }
 
 /* ========================================== */
@@ -433,34 +448,14 @@
     border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-.badge-scheduled {
+.badge-appointment {
     background: #dbeafe;
     color: #1e40af;
 }
 
-.badge-arrived {
-    background: #ede9fe;
-    color: #6b21a8;
-}
-
-.badge-ready {
+.badge-queue {
     background: #fef3c7;
     color: #b45309;
-}
-
-.badge-in-treatment {
-    background: #d1fae5;
-    color: #065f46;
-}
-
-.badge-completed {
-    background: #d1fae5;
-    color: #047857;
-}
-
-.badge-needs-followup {
-    background: #fed7aa;
-    color: #c2410c;
 }
 
 .badge-cancelled {
